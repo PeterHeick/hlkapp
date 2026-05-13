@@ -6,6 +6,9 @@ on:
     tags:
       - "v*"                  # v0.1.0, v0.2.0 osv. → laver også GitHub Release
 
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
 jobs:
   build:
     runs-on: windows-latest

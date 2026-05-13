@@ -37,7 +37,11 @@ def _reject_private_url(url: str) -> None:
         try:
             resolved = socket.getaddrinfo(hostname, None)
             for *_, sockaddr in resolved:
-                ip = ip_address(sockaddr[0])
+                try:
+                    ip = ip_address(sockaddr[0])
+                except ValueError:
+                    # Windows kan returnere IPv6 zone IDs (fe80::1%eth0) som ip_address ikke forstår
+                    continue
                 if ip.is_private or ip.is_loopback or ip.is_link_local or ip.is_reserved:
                     raise HTTPException(status_code=422, detail="Interne netværksadresser er ikke tilladt")
         except socket.gaierror:

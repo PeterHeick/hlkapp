@@ -60,9 +60,11 @@ def start_crawl(url: str, depth: int = 5) -> subprocess.Popen:  # type: ignore[t
         cmd,
         stdout=subprocess.PIPE,
         stderr=subprocess.STDOUT,
+        stdin=subprocess.DEVNULL,
         text=True,
         cwd=str(PROJECT_ROOT),
         env=env,
+        **({"creationflags": subprocess.CREATE_NO_WINDOW} if sys.platform == "win32" else {}),
     )
     _active_proc = proc
     threading.Thread(

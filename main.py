@@ -13,6 +13,9 @@ if "--scrapy-worker" in _sys.argv:
     _sys.exit(0)
 
 import errno
+import logging
+import multiprocessing
+import os
 import socket
 import sys
 import threading
@@ -23,8 +26,14 @@ from pathlib import Path
 import uvicorn
 
 if getattr(sys, "frozen", False):
-    import os
-    os.chdir(Path(sys.executable).parent)
+    _exe_dir = Path(sys.executable).parent
+    os.chdir(_exe_dir)
+    (_exe_dir / "data").mkdir(exist_ok=True)
+    logging.basicConfig(
+        filename=str(_exe_dir / "data" / "klinikportal.log"),
+        level=logging.INFO,
+        format="%(asctime)s %(levelname)s %(name)s: %(message)s",
+    )
 
 from klinik.app import app  # noqa: E402
 from klinik.config import settings  # noqa: E402
@@ -49,6 +58,7 @@ def _open_browser(port: int) -> None:
 
 
 if __name__ == "__main__":
+    multiprocessing.freeze_support()
     port = _find_free_port(settings.port)
     threading.Thread(target=_open_browser, args=(port,), daemon=True).start()
     uvicorn.run(app, host="127.0.0.1", port=port, log_level="info", log_config=None)

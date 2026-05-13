@@ -2,12 +2,19 @@
 from __future__ import annotations
 
 import json
+import sys
 from pathlib import Path
 
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 _DATA_DIR = Path("data")
 _CONFIG_PATH = _DATA_DIR / "config.json"
+
+# I frozen-miljø ligger bundtede read-only filer i sys._MEIPASS (_internal/)
+if getattr(sys, "frozen", False):
+    _ASSETS_DIR: Path = Path(sys._MEIPASS) / "assets"  # type: ignore[attr-defined]
+else:
+    _ASSETS_DIR = Path("assets")
 
 
 def _load_json() -> dict:  # type: ignore[type-arg]
@@ -28,7 +35,7 @@ class Settings(BaseSettings):
     port: int = 8765
     db_path: Path = _DATA_DIR / "klinik.db"
     exports_dir: Path = _DATA_DIR / "exports"
-    assets_dir: Path = Path("assets")
+    assets_dir: Path = _ASSETS_DIR
     max_pages: int = 1000
     deep_threshold: int = 4
 

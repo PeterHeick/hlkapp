@@ -41,6 +41,18 @@ if "--scrapy-worker" in _sys.argv:
     from pathlib import Path as _Path
     if getattr(_sys, "frozen", False):
         _os.chdir(_Path(_sys.executable).parent)
+        # Scrapy 2.15+ kalder inspect.getsource() på hvert callback for at
+        # opdage forældet generator-brug. I frozen app findes .py-filer ikke
+        # (kun bytecode) — getsource() kaster OSError og Scrapy dropper hele
+        # responsen lydløst. Resultat: 0 sider crawlet, ingen fejlbesked.
+        import scrapy.utils.misc as _scrapy_misc
+        _orig_is_gen = _scrapy_misc.is_generator_with_return_value
+        def _safe_is_generator(func):  # type: ignore[no-untyped-def]
+            try:
+                return _orig_is_gen(func)
+            except OSError:
+                return False
+        _scrapy_misc.is_generator_with_return_value = _safe_is_generator
     _sys.argv = [_sys.argv[0]] + [a for a in _sys.argv[1:] if a != "--scrapy-worker"]
     from scrapy.cmdline import execute
     execute()
@@ -344,6 +356,7 @@ GitHub → repo → Settings → Actions → General → Workflow permissions �
 | `PackageNotFoundError` for pakker man ikke kendte til (`cssselect`, `parsel` osv.) | Transitive afhængigheder bruger også `importlib.metadata` — manuel liste er aldrig komplet. | Brug en dynamisk løkke over `importlib.metadata.distributions()` i stedet for en hardkodet liste. |
 | `ValueError` ved IP-validering på Windows (SSRF-tjek) | `socket.getaddrinfo()` returnerer IPv6-adresser med zone IDs (`fe80::1%eth0`) som `ip_address()` ikke kan parse | Wrap det indre `ip_address(sockaddr[0])`-kald i `try/except ValueError: continue` |
 | `403 Resource not accessible by integration` i GitHub Actions | Token mangler skriveadgang til releases | Tilføj `permissions: contents: write` i workflow + sæt Read/write i repo-indstillinger |
+| Scrapy finder 0 sider — `OSError: could not get source code` i hvert callback | Scrapy 2.15+ kalder `inspect.getsource()` på hvert callback for at opdage forældet `yield`-brug. I frozen app findes `.py`-kildefiler ikke (kun bytecode) — `getsource()` kaster `OSError` og Scrapy dropper hele responsen lydløst. | Monkey-patch `scrapy.utils.misc.is_generator_with_return_value` i `--scrapy-worker`-blokken til at returnere `False` ved `OSError` (se kodeeksempel nedenfor) |
 
 ---
 

@@ -15,11 +15,11 @@ onMounted(() => settings.load())
       <div class="bg-white border border-slate-200 rounded-lg shadow-sm">
         <div class="px-5 pt-4 pb-3 border-b border-slate-100">
           <h2 class="text-[14px] font-semibold text-slate-900 m-0">Hjemmeside</h2>
-          <p class="text-[12px] text-slate-500 mt-0.5">Standardværdier for crawl-værktøjet.</p>
+          <p class="text-[12px] text-slate-500 mt-0.5">URL og indstillinger der bruges når du starter et crawl.</p>
         </div>
         <div class="px-5 py-5 space-y-4">
           <div class="space-y-1.5">
-            <label class="text-[12.5px] font-medium text-slate-800 block">Standard URL</label>
+            <label class="text-[12.5px] font-medium text-slate-800 block">Hjemmeside URL</label>
             <input
               v-model="settings.siteUrl"
               class="w-full h-9 px-3 rounded-md bg-white border border-slate-300 text-[13px]

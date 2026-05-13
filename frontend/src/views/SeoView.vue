@@ -19,10 +19,8 @@ const crawler = useCrawlerStore()
     </div>
 
     <SeoControlBar
-      :url="crawler.url"
       :depth="crawler.depth"
       :crawling="crawler.running"
-      @update:url="crawler.url = $event"
       @update:depth="crawler.depth = $event"
       @start="crawler.start()"
       @stop="crawler.stop()"

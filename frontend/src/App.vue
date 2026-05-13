@@ -9,7 +9,6 @@ const settings = useSettingsStore()
 
 onMounted(async () => {
   await settings.load()
-  crawler.url = settings.siteUrl
   await crawler.restoreSession()
 })
 </script>

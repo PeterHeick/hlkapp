@@ -3,9 +3,9 @@ import { ref, computed } from 'vue'
 import { apiFetch } from '@/api/client'
 import { CrawlerStatusSchema, CrawlerResultsSchema } from '@/api/schemas'
 import type { CrawlPage } from '@/api/schemas'
+import { useSettingsStore } from '@/stores/settings'
 
 export const useCrawlerStore = defineStore('crawler', () => {
-  const url = ref('')
   const depth = ref(5)
   const running = ref(false)
   const pageCount = ref(0)
@@ -38,16 +38,18 @@ export const useCrawlerStore = defineStore('crawler', () => {
   })
 
   async function start() {
+    const settings = useSettingsStore()
+    const crawlUrl = settings.siteUrl
     error.value = null
     try {
       running.value = true
       pageCount.value = 0
       pages.value = []
       linkCounts.value = {}
-      statusText.value = `Crawling: ${url.value}`
+      statusText.value = `Crawling: ${crawlUrl}`
       await apiFetch('/crawler/start', {
         method: 'POST',
-        body: { url: url.value, depth: depth.value },
+        body: { url: crawlUrl, depth: depth.value },
       })
       pollTimer = setInterval(poll, 2000)
     } catch (e: unknown) {
@@ -120,7 +122,7 @@ export const useCrawlerStore = defineStore('crawler', () => {
   }
 
   return {
-    url, depth, running, pageCount, statusText, error,
+    depth, running, pageCount, statusText, error,
     pages, linkCounts, orphanCount, errorCount, hierarchySummary,
     start, stop, restoreSession,
   }

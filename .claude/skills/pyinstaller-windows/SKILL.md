@@ -166,10 +166,11 @@ import os, sys
 # Fix: tilføj projektroden manuelt til sys.path her i toppen af spec-filen.
 sys.path.insert(0, os.path.abspath("."))
 
+import importlib.metadata as _imeta
 from PyInstaller.utils.hooks import collect_all, copy_metadata
 
 # collect_all() er den rigtige løsning — ét kald håndterer datas + binaries +
-# hiddenimports + metadata. Brug det for alle pakker med C-extensions, plugins
+# hiddenimports + metadata. Brug det for pakker med C-extensions, plugins
 # eller dynamiske imports. Erstatter collect_data_files + collect_submodules +
 # copy_metadata i separate kald.
 scrapy_d,  scrapy_b,  scrapy_h  = collect_all("scrapy")
@@ -177,6 +178,18 @@ twisted_d, twisted_b, twisted_h = collect_all("twisted")
 lxml_d,    lxml_b,    lxml_h    = collect_all("lxml")
 pandas_d,  pandas_b,  pandas_h  = collect_all("pandas")
 certifi_d, certifi_b, certifi_h = collect_all("certifi")
+
+# Saml metadata (dist-info) for ALLE installerede pakker dynamisk.
+# Undgår at manuelt vedligeholde en liste — enhver pakke der kalder
+# importlib.metadata.version() ved runtime vil finde sin dist-info.
+_all_metadata = []
+for _dist in _imeta.distributions():
+    _name = _dist.metadata.get("Name")
+    if _name:
+        try:
+            _all_metadata.extend(copy_metadata(_name))
+        except Exception:
+            pass
 
 a = Analysis(
     ["main.py"],
@@ -188,19 +201,8 @@ a = Analysis(
         ("assets/hierarchy_template.html", "assets"),
         ("scrapy_crawler/scrapy.cfg", "scrapy_crawler"),
         *scrapy_d, *twisted_d, *lxml_d, *pandas_d, *certifi_d,
-        # Rene Python-pakker behøver kun dist-info (copy_metadata), ikke collect_all
-        *copy_metadata("pydantic"),
-        *copy_metadata("pydantic-settings"),
-        *copy_metadata("fastapi"),
-        *copy_metadata("uvicorn"),
-        *copy_metadata("httpx"),
-        *copy_metadata("psutil"),
-        *copy_metadata("beautifulsoup4"),
-        *copy_metadata("starlette"),
-        *copy_metadata("anyio"),
-        *copy_metadata("h11"),
-        *copy_metadata("httptools"),
-        *copy_metadata("click"),
+        # Metadata for alle installerede pakker — aldrig manuelt gætte listen
+        *_all_metadata,
     ],
     hiddenimports=[
         *scrapy_h, *twisted_h, *lxml_h, *pandas_h, *certifi_h,
@@ -339,6 +341,7 @@ GitHub → repo → Settings → Actions → General → Workflow permissions �
 | `ModuleNotFoundError` på lokalpakke trods `collect_submodules` i spec | `collect_submodules()` kører FØR `Analysis()` — `pathex` er ikke aktivt endnu. Lokale pakker der ikke er pip-installerede giver en tom liste. | Tilføj `sys.path.insert(0, os.path.abspath("."))` øverst i spec-filen + eksplicit modul-liste som sikkerhedsnet |
 | `importlib.metadata.PackageNotFoundError: No package metadata was found for <pkg>` | `collect_data_files()` bundter datafiler men **ikke** dist-info-mappen. Kode der kalder `importlib.metadata.version()` / `requires()` ved runtime finder ingen metadata. | Brug `collect_all()` i stedet — det håndterer datas + binaries + hiddenimports + metadata i ét kald. For rene Python-pakker: `copy_metadata()` i `datas`. |
 | Gentagne individuelle fejl med `collect_data_files` + `collect_submodules` + `copy_metadata` | Disse tre funktioner håndterer hver især kun én ting — det er let at glemme én. | Brug `collect_all("pkg")` fra starten — returnerer `(datas, binaries, hiddenimports)` og dækker det hele. |
+| `PackageNotFoundError` for pakker man ikke kendte til (`cssselect`, `parsel` osv.) | Transitive afhængigheder bruger også `importlib.metadata` — manuel liste er aldrig komplet. | Brug en dynamisk løkke over `importlib.metadata.distributions()` i stedet for en hardkodet liste. |
 | `ValueError` ved IP-validering på Windows (SSRF-tjek) | `socket.getaddrinfo()` returnerer IPv6-adresser med zone IDs (`fe80::1%eth0`) som `ip_address()` ikke kan parse | Wrap det indre `ip_address(sockaddr[0])`-kald i `try/except ValueError: continue` |
 | `403 Resource not accessible by integration` i GitHub Actions | Token mangler skriveadgang til releases | Tilføj `permissions: contents: write` i workflow + sæt Read/write i repo-indstillinger |
 

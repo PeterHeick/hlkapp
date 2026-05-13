@@ -7,6 +7,18 @@ if "--scrapy-worker" in _sys.argv:
     from pathlib import Path as _Path
     if getattr(_sys, "frozen", False):
         _os.chdir(_Path(_sys.executable).parent)
+        # Scrapy 2.15+ kalder inspect.getsource() på hvert callback for at
+        # opdage forældet generator-brug. I en frossen app findes .py-filer
+        # ikke — kun bytecode — så getsource() kaster OSError og dropper
+        # hele responsen. Patch funktionen til at returnere False ved OSError.
+        import scrapy.utils.misc as _scrapy_misc
+        _orig_is_gen = _scrapy_misc.is_generator_with_return_value
+        def _safe_is_generator(func):  # type: ignore[no-untyped-def]
+            try:
+                return _orig_is_gen(func)
+            except OSError:
+                return False
+        _scrapy_misc.is_generator_with_return_value = _safe_is_generator
     _sys.argv = [_sys.argv[0]] + [a for a in _sys.argv[1:] if a != "--scrapy-worker"]
     from scrapy.cmdline import execute
     execute()

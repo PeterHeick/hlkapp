@@ -7,6 +7,7 @@ import sys
 # projektmappen) kan Python ikke importere. Fix: tilføj projektroden manuelt.
 sys.path.insert(0, os.path.abspath("."))
 
+import importlib.metadata as _imeta
 from PyInstaller.utils.hooks import collect_all, copy_metadata
 
 # collect_all() gør ALT i ét kald: datas + binaries + hiddenimports + metadata.
@@ -16,6 +17,17 @@ twisted_d,  twisted_b,  twisted_h  = collect_all("twisted")
 lxml_d,     lxml_b,     lxml_h     = collect_all("lxml")
 pandas_d,   pandas_b,   pandas_h   = collect_all("pandas")
 certifi_d,  certifi_b,  certifi_h  = collect_all("certifi")
+
+# Saml metadata (dist-info) for ALLE installerede pakker dynamisk.
+# Undgår at manuelt gætte hvilke pakker der kalder importlib.metadata ved runtime.
+_all_metadata = []
+for _dist in _imeta.distributions():
+    _name = _dist.metadata.get("Name")
+    if _name:
+        try:
+            _all_metadata.extend(copy_metadata(_name))
+        except Exception:
+            pass
 
 block_cipher = None
 
@@ -41,20 +53,10 @@ a = Analysis(
         *lxml_d,
         *pandas_d,
         *certifi_d,
-        # dist-info for pakker der ikke behøver collect_all men bruger
-        # importlib.metadata.version() / requires() ved runtime
-        *copy_metadata("pydantic"),
-        *copy_metadata("pydantic-settings"),
-        *copy_metadata("fastapi"),
-        *copy_metadata("uvicorn"),
-        *copy_metadata("httpx"),
-        *copy_metadata("psutil"),
-        *copy_metadata("beautifulsoup4"),
-        *copy_metadata("starlette"),
-        *copy_metadata("anyio"),
-        *copy_metadata("h11"),
-        *copy_metadata("httptools"),
-        *copy_metadata("click"),
+        # Metadata (dist-info) for ALLE installerede pakker — dynamisk genereret
+        # så vi ikke manuelt skal gætte hvilke pakker kalder importlib.metadata
+        # ved runtime. Undgår PackageNotFoundError uanset afhængighedstræet.
+        *_all_metadata,
     ],
     hiddenimports=[
         # Fra collect_all — dynamiske imports PyInstaller ikke finder statisk

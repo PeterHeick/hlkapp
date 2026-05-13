@@ -2,38 +2,47 @@
 import os
 import sys
 
-# collect_submodules() kører FØR Analysis() initialiseres, så pathex er ikke
-# aktivt endnu. scrapy_crawler er ikke installeret som pakke i uv-miljøet, så
-# Python kan ikke importere det — collect_submodules returnerer en tom liste.
-# Fix: tilføj projektroden til sys.path manuelt her.
+# collect_submodules/collect_all kører FØR Analysis() initialiseres, så pathex
+# er ikke aktivt endnu. Lokale pakker der ikke er pip-installerede (kun i
+# projektmappen) kan Python ikke importere. Fix: tilføj projektroden manuelt.
 sys.path.insert(0, os.path.abspath("."))
 
-from PyInstaller.utils.hooks import collect_data_files, collect_submodules, copy_metadata
+from PyInstaller.utils.hooks import collect_all, copy_metadata
+
+# collect_all() gør ALT i ét kald: datas + binaries + hiddenimports + metadata.
+# Brug det for pakker med dynamiske imports, plugins eller C-extensions.
+scrapy_d,   scrapy_b,   scrapy_h   = collect_all("scrapy")
+twisted_d,  twisted_b,  twisted_h  = collect_all("twisted")
+lxml_d,     lxml_b,     lxml_h     = collect_all("lxml")
+pandas_d,   pandas_b,   pandas_h   = collect_all("pandas")
+certifi_d,  certifi_b,  certifi_h  = collect_all("certifi")
 
 block_cipher = None
 
 a = Analysis(
     ["main.py"],
     pathex=[".", "backend/src"],
-    binaries=[],
+    binaries=[
+        *scrapy_b,
+        *twisted_b,
+        *lxml_b,
+        *pandas_b,
+        *certifi_b,
+    ],
     datas=[
+        # App-specifikke filer
         ("backend/src/klinik/static/dist", "klinik/static/dist"),
         ("assets/graph_template.html", "assets"),
         ("assets/hierarchy_template.html", "assets"),
         ("scrapy_crawler/scrapy.cfg", "scrapy_crawler"),
-        # Datafiler (plugins, certs, schemas osv.)
-        *collect_data_files("scrapy"),
-        *collect_data_files("twisted"),
-        *collect_data_files("lxml"),
-        *collect_data_files("certifi"),
-        # dist-info (metadata-mapper) — kræves når pakker kalder
-        # importlib.metadata.version() / requires() ved runtime.
-        # collect_data_files() bundter IKKE dist-info — copy_metadata() gør.
-        *copy_metadata("lxml"),
-        *copy_metadata("scrapy"),
-        *copy_metadata("twisted"),
-        *copy_metadata("certifi"),
-        *copy_metadata("pandas"),
+        # Pakke-data fra collect_all (inkl. metadata og datafiler)
+        *scrapy_d,
+        *twisted_d,
+        *lxml_d,
+        *pandas_d,
+        *certifi_d,
+        # dist-info for pakker der ikke behøver collect_all men bruger
+        # importlib.metadata.version() / requires() ved runtime
         *copy_metadata("pydantic"),
         *copy_metadata("pydantic-settings"),
         *copy_metadata("fastapi"),
@@ -48,12 +57,14 @@ a = Analysis(
         *copy_metadata("click"),
     ],
     hiddenimports=[
-        *collect_submodules("scrapy"),
-        *collect_submodules("twisted"),
-        *collect_submodules("pandas"),
-        # Eksplicit liste som sikkerhedsnet — collect_submodules virker kun hvis
-        # sys.path-insert ovenfor lykkedes. Begge tilgange skal med.
-        *collect_submodules("scrapy_crawler"),
+        # Fra collect_all — dynamiske imports PyInstaller ikke finder statisk
+        *scrapy_h,
+        *twisted_h,
+        *lxml_h,
+        *pandas_h,
+        *certifi_h,
+        # scrapy_crawler: lokalpakke — collect_all virker ikke for ikke-installerede
+        # pakker, så eksplicit liste bruges som sikkerhedsnet
         "scrapy_crawler",
         "scrapy_crawler.src",
         "scrapy_crawler.src.crawler",
@@ -62,20 +73,23 @@ a = Analysis(
         "scrapy_crawler.src.crawler.db",
         "scrapy_crawler.src.crawler.spiders",
         "scrapy_crawler.src.crawler.spiders.site_spider",
+        # uvicorn — protokol-backends vælges dynamisk ved opstart
         "uvicorn.protocols.http.h11_impl",
         "uvicorn.protocols.http.httptools_impl",
         "uvicorn.protocols.websockets.websockets_impl",
         "uvicorn.protocols.websockets.wsproto_impl",
         "uvicorn.lifespan.on",
         "uvicorn.logging",
+        # pydantic / fastapi
         "pydantic_core",
         "pydantic_settings",
-        "lxml",
-        "lxml._elementpath",
+        # psutil — Windows-backend importeres dynamisk
         "psutil._pswindows",
+        # pywin32 — bruges af psutil og andre Windows-pakker
         "win32api",
         "win32con",
         "win32gui",
+        # multiprocessing — Windows kræver spawn/forkserver
         "multiprocessing.spawn",
         "multiprocessing.forkserver",
         "pkg_resources.py2_warn",
@@ -101,8 +115,8 @@ exe = EXE(
     debug=False,
     bootloader_ignore_signals=False,
     strip=False,
-    upx=False,
-    console=False,
+    upx=False,       # UPX-komprimering trigger antivirus-alarmer
+    console=False,   # ingen terminal-vindue
     disable_windowed_traceback=False,
     target_arch=None,
     codesign_identity=None,

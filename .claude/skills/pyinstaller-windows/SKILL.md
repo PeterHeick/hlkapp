@@ -158,26 +158,62 @@ class Settings(BaseSettings):
 ## `KlinikPortal.spec`
 
 ```python
-from PyInstaller.utils.hooks import collect_data_files, collect_submodules
+import os, sys
+
+# collect_submodules() kører FØR Analysis() — pathex er ikke aktivt endnu.
+# Lokale pakker der ikke er pip-installerede (kun i projektmappen) kan Python
+# derfor ikke importere, og collect_submodules returnerer en tom liste.
+# Fix: tilføj projektroden manuelt til sys.path her i toppen af spec-filen.
+sys.path.insert(0, os.path.abspath("."))
+
+from PyInstaller.utils.hooks import collect_all, copy_metadata
+
+# collect_all() er den rigtige løsning — ét kald håndterer datas + binaries +
+# hiddenimports + metadata. Brug det for alle pakker med C-extensions, plugins
+# eller dynamiske imports. Erstatter collect_data_files + collect_submodules +
+# copy_metadata i separate kald.
+scrapy_d,  scrapy_b,  scrapy_h  = collect_all("scrapy")
+twisted_d, twisted_b, twisted_h = collect_all("twisted")
+lxml_d,    lxml_b,    lxml_h    = collect_all("lxml")
+pandas_d,  pandas_b,  pandas_h  = collect_all("pandas")
+certifi_d, certifi_b, certifi_h = collect_all("certifi")
 
 a = Analysis(
     ["main.py"],
-    pathex=[".", "backend/src"],   # BEGGE — gør klinik.* og scrapy_crawler.* importerbare
+    pathex=[".", "backend/src"],
+    binaries=[*scrapy_b, *twisted_b, *lxml_b, *pandas_b, *certifi_b],
     datas=[
         ("backend/src/klinik/static/dist", "klinik/static/dist"),
         ("assets/graph_template.html", "assets"),
         ("assets/hierarchy_template.html", "assets"),
         ("scrapy_crawler/scrapy.cfg", "scrapy_crawler"),
-        *collect_data_files("scrapy"),
-        *collect_data_files("twisted"),
-        *collect_data_files("lxml"),
-        *collect_data_files("certifi"),
+        *scrapy_d, *twisted_d, *lxml_d, *pandas_d, *certifi_d,
+        # Rene Python-pakker behøver kun dist-info (copy_metadata), ikke collect_all
+        *copy_metadata("pydantic"),
+        *copy_metadata("pydantic-settings"),
+        *copy_metadata("fastapi"),
+        *copy_metadata("uvicorn"),
+        *copy_metadata("httpx"),
+        *copy_metadata("psutil"),
+        *copy_metadata("beautifulsoup4"),
+        *copy_metadata("starlette"),
+        *copy_metadata("anyio"),
+        *copy_metadata("h11"),
+        *copy_metadata("httptools"),
+        *copy_metadata("click"),
     ],
     hiddenimports=[
-        *collect_submodules("scrapy"),    # Twisted bruger string-opslag — skal med
-        *collect_submodules("twisted"),
-        *collect_submodules("pandas"),
-        *collect_submodules("scrapy_crawler.src.crawler"),
+        *scrapy_h, *twisted_h, *lxml_h, *pandas_h, *certifi_h,
+        # Lokalpakke — eksplicit liste da collect_all ikke virker for
+        # ikke-installerede pakker (se sys.path.insert ovenfor)
+        "scrapy_crawler",
+        "scrapy_crawler.src",
+        "scrapy_crawler.src.crawler",
+        "scrapy_crawler.src.crawler.settings",
+        "scrapy_crawler.src.crawler.pipelines",
+        "scrapy_crawler.src.crawler.db",
+        "scrapy_crawler.src.crawler.spiders",
+        "scrapy_crawler.src.crawler.spiders.site_spider",
         "uvicorn.protocols.http.h11_impl",
         "uvicorn.protocols.http.httptools_impl",
         "uvicorn.protocols.websockets.websockets_impl",
@@ -299,6 +335,11 @@ GitHub → repo → Settings → Actions → General → Workflow permissions �
 | `500 Internal Server Error` på `/api/crawler/start` | `console=False` app har ingen stdin-handle — `Popen` fejler | `stdin=subprocess.DEVNULL` + `creationflags=CREATE_NO_WINDOW` |
 | `IPersistFile::Save 0x80070005 Adgang nægtet` | Inno Setup brugte `{commondesktop}` (alle brugere = admin) | Brug `{userdesktop}` og `{userprograms}` i stedet |
 | `ValueError: does not appear to be IPv4 or IPv6` | `except AddressValueError` fanger ikke den `ValueError` som `ip_address()` kaster for domænenavne | Brug `except ValueError` (som er superklassen) |
+| `ModuleNotFoundError: No module named 'mypkg.sub'` | `collect_submodules("mypkg.sub.deep")` inkluderer ikke forældrene `mypkg` og `mypkg.sub` | Brug `collect_submodules("mypkg")` — altid rodpakken |
+| `ModuleNotFoundError` på lokalpakke trods `collect_submodules` i spec | `collect_submodules()` kører FØR `Analysis()` — `pathex` er ikke aktivt endnu. Lokale pakker der ikke er pip-installerede giver en tom liste. | Tilføj `sys.path.insert(0, os.path.abspath("."))` øverst i spec-filen + eksplicit modul-liste som sikkerhedsnet |
+| `importlib.metadata.PackageNotFoundError: No package metadata was found for <pkg>` | `collect_data_files()` bundter datafiler men **ikke** dist-info-mappen. Kode der kalder `importlib.metadata.version()` / `requires()` ved runtime finder ingen metadata. | Brug `collect_all()` i stedet — det håndterer datas + binaries + hiddenimports + metadata i ét kald. For rene Python-pakker: `copy_metadata()` i `datas`. |
+| Gentagne individuelle fejl med `collect_data_files` + `collect_submodules` + `copy_metadata` | Disse tre funktioner håndterer hver især kun én ting — det er let at glemme én. | Brug `collect_all("pkg")` fra starten — returnerer `(datas, binaries, hiddenimports)` og dækker det hele. |
+| `ValueError` ved IP-validering på Windows (SSRF-tjek) | `socket.getaddrinfo()` returnerer IPv6-adresser med zone IDs (`fe80::1%eth0`) som `ip_address()` ikke kan parse | Wrap det indre `ip_address(sockaddr[0])`-kald i `try/except ValueError: continue` |
 | `403 Resource not accessible by integration` i GitHub Actions | Token mangler skriveadgang til releases | Tilføj `permissions: contents: write` i workflow + sæt Read/write i repo-indstillinger |
 
 ---
@@ -330,8 +371,68 @@ Skriv denne sti direkte i Windows Stifinders adresselinje.
 # GitHub → Actions → Build Windows Installer → Run workflow
 
 # Release-build med .exe vedhæftet under Releases:
-git tag v0.2.0
-git push origin v0.2.0
+git push origin main   # ALTID først — sikrer at origin har rettelserne
+git tag v0.2.1         # nyt tag — peger på nuværende HEAD
+git push origin v0.2.1 # trigger workflowet
 ```
 
 Tagget trigger workflowet automatisk. Workflowet bruger workflow-filen **som den så ud på tag-tidspunktet** — tag derfor først efter alle fixes er committed og pushet til main.
+
+### Kritisk misforståelse om tags
+
+Et git-tag er en **fastfrossen peger på et bestemt commit**. `git push origin v0.2.0` sender tagget til GitHub, men bygger fra det commit tagget peger på — ikke fra den nyeste kode på main.
+
+**Konsekvens:** Hvis du laver fixes *efter* at have sat et tag, og derefter pusher tagget igen, bygger GitHub Actions stadig fra den gamle kode. Du skal lave et **nyt tag** (f.eks. `v0.2.1`) der peger på HEAD efter fixet.
+
+```
+Commit A  ← tag v0.2.0  (bygger fra A — ingen fix)
+Commit B  ← fix
+Commit C  ← fix
+           ← tag v0.2.1  (bygger fra C — med fixes)
+```
+
+---
+
+## Windows-specifikke faldgruber i applikationskode
+
+### SSRF-beskyttelse / IP-validering
+
+Når du tjekker om en URL peger på en privat/intern adresse (SSRF-beskyttelse), er det fristende at skrive:
+
+```python
+from ipaddress import ip_address
+import socket
+
+hostname = urlparse(url).hostname or ""
+try:
+    ip = ip_address(hostname)          # fejler for domænenavne → ValueError
+    ...
+except ValueError:
+    # Domænenavn — slå op og tjek den opløste IP
+    for *_, sockaddr in socket.getaddrinfo(hostname, None):
+        ip = ip_address(sockaddr[0])   # ← fejler på Windows!
+        ...
+```
+
+**Problemet på Windows:** `socket.getaddrinfo()` kan returnere IPv6-adresser med zone IDs, f.eks. `fe80::1%eth0`. `ip_address("fe80::1%eth0")` kaster `ValueError` — som ikke er fanget i den indre løkke, og propagerer op som en uventet 500-fejl.
+
+**Korrekt mønster:**
+
+```python
+try:
+    ip = ip_address(hostname)
+    if ip.is_private or ip.is_loopback or ip.is_link_local or ip.is_reserved:
+        raise HTTPException(status_code=422, detail="Interne adresser er ikke tilladt")
+except ValueError:
+    try:
+        resolved = socket.getaddrinfo(hostname, None)
+        for *_, sockaddr in resolved:
+            try:
+                ip = ip_address(sockaddr[0])
+            except ValueError:
+                continue   # Windows IPv6 zone ID (fe80::1%eth0) — spring over
+            if ip.is_private or ip.is_loopback or ip.is_link_local or ip.is_reserved:
+                raise HTTPException(status_code=422, detail="Interne adresser er ikke tilladt")
+    except socket.gaierror:
+        pass   # kan ikke slås op — lad downstream håndtere det
+```

@@ -1,7 +1,7 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
 import { apiFetch } from '@/api/client'
-import type { AppSettings } from '@/api/schemas'
+import { AppSettingsSchema } from '@/api/schemas'
 
 export const useSettingsStore = defineStore('settings', () => {
   const siteUrl = ref('')
@@ -13,7 +13,7 @@ export const useSettingsStore = defineStore('settings', () => {
 
   async function load() {
     try {
-      const data = await apiFetch<AppSettings>('/settings')
+      const data = AppSettingsSchema.parse(await apiFetch('/settings'))
       siteUrl.value = data.site_url
       maxDepth.value = data.max_depth
       port.value = data.port

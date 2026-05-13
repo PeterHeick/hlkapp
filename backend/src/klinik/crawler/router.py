@@ -2,14 +2,17 @@
 from __future__ import annotations
 
 import asyncio
-import json
 import logging
+import socket
+from ipaddress import AddressValueError, ip_address
 from pathlib import Path
+from urllib.parse import urlparse
 
 from fastapi import APIRouter, HTTPException
 from fastapi.responses import FileResponse, StreamingResponse
 from pydantic import BaseModel
 
+from klinik.config import settings
 from klinik.crawler import runner
 from klinik.crawler.analysis.exporter import export_inventory, export_matrix, export_todo
 from klinik.crawler.analysis.pipeline import run_analysis
@@ -20,6 +23,25 @@ router = APIRouter(tags=["crawler"])
 _repo = CrawlRepository()
 
 _finishing = False
+
+
+def _reject_private_url(url: str) -> None:
+    """Afviser URLs der peger på private/loopback-adresser."""
+    hostname = urlparse(url).hostname or ""
+    try:
+        ip = ip_address(hostname)
+        if ip.is_private or ip.is_loopback or ip.is_link_local or ip.is_reserved:
+            raise HTTPException(status_code=422, detail="Interne netværksadresser er ikke tilladt")
+    except AddressValueError:
+        # Hostname — slå det op og tjek den opløste IP
+        try:
+            resolved = socket.getaddrinfo(hostname, None)
+            for *_, sockaddr in resolved:
+                ip = ip_address(sockaddr[0])
+                if ip.is_private or ip.is_loopback or ip.is_link_local or ip.is_reserved:
+                    raise HTTPException(status_code=422, detail="Interne netværksadresser er ikke tilladt")
+        except socket.gaierror:
+            pass  # kan ikke slås op — lad Scrapy håndtere det
 
 
 class StartBody(BaseModel):
@@ -33,8 +55,9 @@ async def start_crawl(body: StartBody) -> dict[str, str]:
         raise HTTPException(status_code=409, detail="Crawl er allerede i gang")
     if not body.url.startswith(("http://", "https://")):
         raise HTTPException(status_code=422, detail="URL skal starte med http:// eller https://")
+    await asyncio.to_thread(_reject_private_url, body.url)
 
-    await asyncio.to_thread(_save_last_url, body.url)
+    await asyncio.to_thread(settings.save, last_url=body.url)
     await asyncio.to_thread(_repo.reset)
     await asyncio.to_thread(runner.start_crawl, body.url, body.depth)
     return {"status": "started"}
@@ -105,7 +128,9 @@ async def finish_crawl() -> dict[str, str]:
 async def get_graph() -> FileResponse:
     p = Path("data") / "graph.html"
     if not p.exists():
-        raise HTTPException(status_code=404, detail="Graf ikke genereret endnu — kør en crawl først")
+        raise HTTPException(
+            status_code=404, detail="Graf ikke genereret endnu — kør en crawl først"
+        )
     return FileResponse(str(p), media_type="text/html")
 
 
@@ -113,7 +138,9 @@ async def get_graph() -> FileResponse:
 async def get_hierarchy() -> FileResponse:
     p = Path("data") / "hierarchy.html"
     if not p.exists():
-        raise HTTPException(status_code=404, detail="Hierarki ikke genereret endnu — kør en crawl først")
+        raise HTTPException(
+            status_code=404, detail="Hierarki ikke genereret endnu — kør en crawl først"
+        )
     return FileResponse(str(p), media_type="text/html")
 
 
@@ -143,17 +170,3 @@ async def _finish() -> None:
         _finishing = False
 
 
-async def finish_after_crawl() -> None:
-    """Kaldes af polling-klienter når de opdager at crawl er stoppet."""
-    await _finish()
-
-
-def _save_last_url(url: str) -> None:
-    config_path = Path("data") / "config.json"
-    try:
-        data = json.loads(config_path.read_text(encoding="utf-8")) if config_path.exists() else {}
-    except (json.JSONDecodeError, OSError):
-        data = {}
-    data["last_url"] = url
-    config_path.parent.mkdir(exist_ok=True)
-    config_path.write_text(json.dumps(data, indent=2, ensure_ascii=False), encoding="utf-8")

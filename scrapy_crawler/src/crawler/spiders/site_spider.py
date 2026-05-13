@@ -14,7 +14,6 @@ from scrapy_crawler.src.crawler.db import get_connection, init_db, page_count
 WP_API_ENDPOINTS = [
     "/wp-json/wp/v2/pages?per_page=100",
     "/wp-json/wp/v2/posts?per_page=100",
-    "/wp-json/wp/v2/categories",
 ]
 
 

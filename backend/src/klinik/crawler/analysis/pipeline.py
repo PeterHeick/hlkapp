@@ -1,14 +1,13 @@
 """Analyse-pipeline — kørselspunkt for al post-crawl analyse."""
 from __future__ import annotations
 
-import json
 import logging
-import re
 from dataclasses import dataclass
 from pathlib import Path
 
 import pandas as pd
 
+from klinik.config import settings
 from klinik.crawler.analysis.broken_links import find_broken_links
 from klinik.crawler.analysis.depth_calculator import recalculate_depths
 from klinik.crawler.analysis.graph_builder import build_graph_html
@@ -44,14 +43,7 @@ def run_analysis(repo: CrawlRepository | None = None) -> AnalysisResult:
     pages = r.pages()
     links = r.links()
 
-    config_path = Path("data") / "config.json"
-    root_url = ""
-    try:
-        raw = json.loads(config_path.read_text(encoding="utf-8"))
-        raw_url = raw.get("last_url", "").strip()
-        root_url = re.sub(r'^(https?://)https?://', r'\1', raw_url)
-    except Exception:
-        pass
+    root_url = settings.last_url
 
     log.info("Analyse: %d sider, %d links, root=%r", len(pages), len(links), root_url)
 

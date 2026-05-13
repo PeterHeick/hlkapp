@@ -1,14 +1,9 @@
 """SQLite buffer for crawl results — bruges af Scrapy pipeline."""
 from __future__ import annotations
 
-import hashlib
 import sqlite3
 
 from klinik.config import settings
-
-
-def url_hash(url: str) -> str:
-    return hashlib.sha256(url.encode()).hexdigest()[:16]
 
 
 def get_connection() -> sqlite3.Connection:
@@ -16,6 +11,7 @@ def get_connection() -> sqlite3.Connection:
     conn = sqlite3.connect(str(settings.db_path), check_same_thread=False)
     conn.row_factory = sqlite3.Row
     conn.execute("PRAGMA journal_mode=WAL")
+    conn.execute("PRAGMA foreign_keys=ON")
     return conn
 
 

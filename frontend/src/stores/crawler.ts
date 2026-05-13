@@ -1,7 +1,8 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import { apiFetch } from '@/api/client'
-import type { CrawlPage, CrawlerResults } from '@/api/schemas'
+import { CrawlerStatusSchema, CrawlerResultsSchema } from '@/api/schemas'
+import type { CrawlPage } from '@/api/schemas'
 
 export const useCrawlerStore = defineStore('crawler', () => {
   const url = ref('')
@@ -65,9 +66,7 @@ export const useCrawlerStore = defineStore('crawler', () => {
 
   async function poll() {
     try {
-      const status = await apiFetch<{ running: boolean; page_count: number; log_tail: string[] }>(
-        '/crawler/status',
-      )
+      const status = CrawlerStatusSchema.parse(await apiFetch('/crawler/status'))
       pageCount.value = status.page_count
       if (status.log_tail?.length) {
         const last = status.log_tail[status.log_tail.length - 1]
@@ -99,17 +98,15 @@ export const useCrawlerStore = defineStore('crawler', () => {
   }
 
   async function loadResults() {
-    const data = await apiFetch<CrawlerResults>('/crawler/results')
+    const data = CrawlerResultsSchema.parse(await apiFetch('/crawler/results'))
     pages.value = data.pages
-    linkCounts.value = data.link_counts as Record<string, { in: number; out: number }>
+    linkCounts.value = data.link_counts
     pageCount.value = data.pages.length
   }
 
   async function restoreSession() {
     try {
-      const status = await apiFetch<{ running: boolean; page_count: number }>(
-        '/crawler/status',
-      )
+      const status = CrawlerStatusSchema.parse(await apiFetch('/crawler/status'))
       if (status.page_count > 0 && !status.running) {
         await loadResults()
         statusText.value = `Tidligere session — ${pages.value.length} sider`

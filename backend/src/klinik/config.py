@@ -23,6 +23,7 @@ class Settings(BaseSettings):
     gecko_api_token: str = ""
     gecko_base_url: str = "https://app.geckobooking.dk/api/v1"
     site_url: str = ""
+    last_url: str = ""
     max_depth: int = 5
     port: int = 8765
     db_path: Path = _DATA_DIR / "klinik.db"
@@ -32,21 +33,31 @@ class Settings(BaseSettings):
     deep_threshold: int = 4
 
     @classmethod
-    def load(cls) -> "Settings":
+    def load(cls) -> Settings:
         return cls(**_load_json())
 
-    def save(self, *, site_url: str | None = None, max_depth: int | None = None) -> None:
+    def save(
+        self,
+        *,
+        site_url: str | None = None,
+        max_depth: int | None = None,
+        last_url: str | None = None,
+    ) -> None:
         data = _load_json()
         if site_url is not None:
             data["site_url"] = site_url
         if max_depth is not None:
             data["max_depth"] = max_depth
+        if last_url is not None:
+            data["last_url"] = last_url
         _CONFIG_PATH.parent.mkdir(exist_ok=True)
         _CONFIG_PATH.write_text(json.dumps(data, indent=2, ensure_ascii=False), encoding="utf-8")
         if site_url is not None:
             self.site_url = site_url
         if max_depth is not None:
             self.max_depth = max_depth
+        if last_url is not None:
+            self.last_url = last_url
 
 
 settings = Settings.load()

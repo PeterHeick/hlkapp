@@ -2,22 +2,33 @@
 from __future__ import annotations
 
 import asyncio
-import json
+from collections.abc import AsyncGenerator
+from contextlib import asynccontextmanager
 from pathlib import Path
 
-from fastapi import APIRouter, FastAPI, HTTPException
+from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
+from klinik.config import settings
 from klinik.crawler.router import router as crawler_router
 from klinik.database import init_db
 from klinik.gecko.router import router as gecko_router
-from klinik.config import settings
 from klinik.statistics.router import router as stats_router
 
-app = FastAPI(title="KlinikPortal", version="0.1.0")
+
+@asynccontextmanager
+async def lifespan(_app: FastAPI) -> AsyncGenerator[None]:
+    await asyncio.to_thread(init_db)
+    static = Path(__file__).parent / "static" / "dist"
+    if static.exists():
+        _app.mount("/", StaticFiles(directory=str(static), html=True), name="frontend")
+    yield
+
+
+app = FastAPI(title="KlinikPortal", version="0.1.0", lifespan=lifespan)
 
 app.add_middleware(
     CORSMiddleware,
@@ -29,14 +40,6 @@ app.add_middleware(
 app.include_router(crawler_router, prefix="/api/crawler")
 app.include_router(gecko_router, prefix="/api/gecko")
 app.include_router(stats_router, prefix="/api/stats")
-
-
-@app.on_event("startup")
-async def startup() -> None:
-    await asyncio.to_thread(init_db)
-    static = Path(__file__).parent / "static" / "dist"
-    if static.exists():
-        app.mount("/", StaticFiles(directory=str(static), html=True), name="frontend")
 
 
 @app.get("/api/health")

@@ -1,3 +1,6 @@
+"""KlinikPortal entry point — starter FastAPI og åbner browser."""
+from __future__ import annotations
+
 import sys as _sys
 if "--scrapy-worker" in _sys.argv:
     import os as _os
@@ -8,9 +11,6 @@ if "--scrapy-worker" in _sys.argv:
     from scrapy.cmdline import execute
     execute()
     _sys.exit(0)
-
-"""KlinikPortal entry point — starter FastAPI og åbner browser."""
-from __future__ import annotations
 
 import errno
 import socket

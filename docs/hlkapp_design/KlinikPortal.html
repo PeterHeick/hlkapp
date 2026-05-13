@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="da">
+<head>
+<meta charset="utf-8"/>
+<title>KlinikPortal — Hi-fi design</title>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+
+<!-- Fonts -->
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+
+<!-- Tailwind -->
+<script src="https://cdn.tailwindcss.com"></script>
+
+<style>
+  html, body { background: #f0eee9; margin: 0; }
+  body { font-family: 'Inter', system-ui, -apple-system, sans-serif; }
+
+  /* Indeterminate progress stripe */
+  @keyframes kp-stripe {
+    0%   { transform: translateX(-100%); }
+    100% { transform: translateX(400%); }
+  }
+  .kp-indeterminate {
+    animation: kp-stripe 1.4s linear infinite;
+  }
+</style>
+
+<!-- React + Babel (pinned) -->
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+</head>
+<body>
+
+<div id="root"></div>
+
+<script type="text/babel" src="design-canvas.jsx"></script>
+<script type="text/babel" src="components.jsx"></script>
+
+<script type="text/babel">
+  const { DesignCanvas, DCSection, DCArtboard, DCPostIt } = window;
+
+  function App() {
+    return (
+      <DesignCanvas title="KlinikPortal" subtitle="Internt værktøj · Hellerup Laserklinik">
+        <DCSection id="full-screens" title="Hovedskærme" subtitle="1280 × 820 — fuld desktop-shell">
+          <DCArtboard id="seo-crawling" label="① SEO · crawling" width={1280} height={820}>
+            <SeoScreen state="crawling"/>
+          </DCArtboard>
+          <DCArtboard id="seo-done" label="② SEO · færdig (8+ rækker)" width={1280} height={820}>
+            <SeoScreen state="done"/>
+          </DCArtboard>
+          <DCArtboard id="settings" label="③ Indstillinger" width={1280} height={820}>
+            <SettingsScreen/>
+          </DCArtboard>
+          <DCArtboard id="stub" label="④ Stub · Statistik" width={1280} height={820}>
+            <StubScreen active="statistik" title="Statistik" heading="Bookingstatistik" Icon={I.Chart}/>
+          </DCArtboard>
+        </DCSection>
+
+        <DCSection id="closeups" title="Detaljer" subtitle="Komponent-close-ups">
+          <DCArtboard id="sidebar" label="⑤ Sidebar-navigation" width={520} height={620}>
+            <SidebarCloseup/>
+          </DCArtboard>
+          <DCArtboard id="rows" label="⑥ Rækkefarvekoder" width={780} height={460}>
+            <RowCodingCloseup/>
+          </DCArtboard>
+        </DCSection>
+      </DesignCanvas>
+    );
+  }
+
+  ReactDOM.createRoot(document.getElementById('root')).render(<App/>);
+</script>
+
+</body>
+</html>

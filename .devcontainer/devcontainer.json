@@ -1,0 +1,60 @@
+{
+  // TILPAS: Projektets navn (vises i VS Code statusbar)
+  "name": "hlkapp dev",
+
+  "image": "mcr.microsoft.com/devcontainers/base:ubuntu",
+
+  "features": {
+    // TILPAS: Fjern features du ikke har brug for, eller skift versioner
+    "ghcr.io/devcontainers/features/node:1": { "version": "22" },
+    "ghcr.io/devcontainers/features/python:1": { "version": "3.13" },
+    "ghcr.io/anthropics/devcontainer-features/claude-code:1.0.5": {}
+  },
+
+  "remoteUser": "vscode",
+  "containerUser": "vscode",
+  "overrideCommand": true,
+
+  // Propagér ANTHROPIC_API_KEY fra host → container.
+  // Sæt den på host: export ANTHROPIC_API_KEY=sk-ant-... i ~/.bashrc
+  "containerEnv": {
+    "ANTHROPIC_API_KEY": "${localEnv:ANTHROPIC_API_KEY}"
+  },
+
+  // ${localWorkspaceFolderBasename} = mappenavnet på projektet (fx "MinApp").
+  // Volume-navne bliver dermed unikke pr. projekt automatisk.
+  //
+  // ~/.claude-volumet: holder bypassPermissions-settings + Claude-login
+  //   persistent på tværs af rebuilds — isoleret fra host's ~/.claude.
+  //
+  // TILPAS: Tilføj volumes for dine node_modules-mapper så de ikke
+  //   kolliderer med host's installation. Eksempel:
+  //     "source=${localWorkspaceFolderBasename}-frontend-nm,target=${containerWorkspaceFolder}/frontend/node_modules,type=volume"
+  "mounts": [
+    "source=${localWorkspaceFolderBasename}-claude-config,target=/home/vscode/.claude,type=volume",
+    "source=${localWorkspaceFolderBasename}-frontend-nm,target=${containerWorkspaceFolder}/frontend/node_modules,type=volume",
+    "source=/home/peter/Projects/HellerupLaserklinik,target=/workspaces/HellerupLaserklinik,type=bind,consistency=cached",
+    "source=/home/peter/Projects/hellerup-laserklinik,target=/workspaces/hellerup-laserklinik,type=bind,consistency=cached"
+  ],
+
+  "forwardPorts": [5173, 8765],
+  "portsAttributes": {
+    "5173": { "label": "frontend (Vite)" },
+    "8765": { "label": "backend (FastAPI)" }
+  },
+
+  "postCreateCommand": "bash .devcontainer/init-container.sh",
+
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "anthropic.claude-code",
+        "ms-python.python",
+        "charliermarsh.ruff",
+        "Vue.volar",
+        "esbenp.prettier-vscode",
+        "bradlc.vscode-tailwindcss"
+      ]
+    }
+  }
+}

@@ -1,0 +1,26 @@
+{
+  "permissions": {
+    "allow": [
+      "WebSearch",
+      "WebFetch(domain:raw.githubusercontent.com)",
+      "Bash(curl *",
+      "Bash(ls *)",
+      "Bash(git *)",
+      "Bash(sed *)",
+      "Bash(python3 *)",
+      "Bash(pnpm install *)",
+      "Bash(pnpm --dir client/widget build)",
+      "Bash(tmux ls *)",
+      "Bash(tmux capture-pane *)",
+      "Bash(curl *)",
+      "Bash(grep *)",
+      "Bash(tmux send-keys *)",
+      "Bash(tmux list-panes *)",
+      "Bash(tmux list-sessions *)",
+      "Bash(tmux list-windows *)",
+      "Bash(echo \"PID: $!\")",
+      "Read(/home/peter/Projects/HellerupLaserklinik/**)",
+      "Read(/home/peter/Projects/hellerup-laserklinik/**)"
+    ]
+  }
+}

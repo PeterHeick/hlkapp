@@ -1,0 +1,17 @@
+data/
+logs/
+*.db
+.env
+frontend/node_modules/
+frontend/dist/
+backend/src/klinik/static/dist/
+__pycache__/
+.pytest_cache/
+.mypy_cache/
+dist/
+build/
+installer/
+*.spec.bak
+.venv/
+*.egg-info/
+.pnpm-store/

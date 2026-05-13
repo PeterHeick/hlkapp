@@ -30,7 +30,7 @@ from klinik.app import app  # noqa: E402
 from klinik.config import settings  # noqa: E402
 
 
-def _find_free_port(start: int, max_tries: int = 10) -> int:
+def _find_free_port(start: int, max_tries: int = 20) -> int:
     for port in range(start, start + max_tries):
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
             s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
@@ -38,7 +38,7 @@ def _find_free_port(start: int, max_tries: int = 10) -> int:
                 s.bind(("127.0.0.1", port))
                 return port
             except OSError as e:
-                if e.errno != errno.EADDRINUSE:
+                if e.errno not in (errno.EADDRINUSE, errno.EACCES):
                     raise
     raise OSError(f"Ingen ledig port fundet i {start}–{start + max_tries - 1}")
 

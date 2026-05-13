@@ -4,7 +4,7 @@ from __future__ import annotations
 import asyncio
 import logging
 import socket
-from ipaddress import AddressValueError, ip_address
+from ipaddress import ip_address
 from pathlib import Path
 from urllib.parse import urlparse
 
@@ -32,7 +32,7 @@ def _reject_private_url(url: str) -> None:
         ip = ip_address(hostname)
         if ip.is_private or ip.is_loopback or ip.is_link_local or ip.is_reserved:
             raise HTTPException(status_code=422, detail="Interne netværksadresser er ikke tilladt")
-    except AddressValueError:
+    except ValueError:
         # Hostname — slå det op og tjek den opløste IP
         try:
             resolved = socket.getaddrinfo(hostname, None)

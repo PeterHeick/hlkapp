@@ -31,7 +31,9 @@ def _drain_stdout(proc: subprocess.Popen, buf: collections.deque[str]) -> None: 
         stripped = line.rstrip()
         if stripped:
             buf.append(stripped)
-            logger.debug("[scrapy] %s", stripped)
+            logger.info("[scrapy] %s", stripped)
+    exit_code = proc.wait()
+    logger.info("[scrapy] subprocess afsluttet med exit code %d", exit_code)
 
 
 def start_crawl(url: str, depth: int = 5) -> subprocess.Popen:  # type: ignore[type-arg]

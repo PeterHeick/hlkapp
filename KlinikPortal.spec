@@ -21,7 +21,7 @@ a = Analysis(
         *collect_submodules("scrapy"),
         *collect_submodules("twisted"),
         *collect_submodules("pandas"),
-        *collect_submodules("scrapy_crawler.src.crawler"),
+        *collect_submodules("scrapy_crawler"),
         "uvicorn.protocols.http.h11_impl",
         "uvicorn.protocols.http.httptools_impl",
         "uvicorn.protocols.websockets.websockets_impl",

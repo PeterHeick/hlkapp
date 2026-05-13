@@ -13,7 +13,10 @@ import psutil
 
 logger = logging.getLogger(__name__)
 
-PROJECT_ROOT = Path(__file__).parent.parent.parent.parent.parent
+if getattr(sys, "frozen", False):
+    PROJECT_ROOT = Path(sys.executable).parent
+else:
+    PROJECT_ROOT = Path(__file__).resolve().parents[4]
 SCRAPY_SETTINGS = "scrapy_crawler.src.crawler.settings"
 
 _log_buffer: collections.deque[str] = collections.deque(maxlen=100)
@@ -34,16 +37,25 @@ def _drain_stdout(proc: subprocess.Popen, buf: collections.deque[str]) -> None: 
 def start_crawl(url: str, depth: int = 5) -> subprocess.Popen:  # type: ignore[type-arg]
     global _active_proc
     _log_buffer.clear()
-    env = {
-        **os.environ,
-        "SCRAPY_SETTINGS_MODULE": SCRAPY_SETTINGS,
-        "PYTHONPATH": f"{PROJECT_ROOT}{os.pathsep}{PROJECT_ROOT / 'backend' / 'src'}",
-    }
-    cmd = [
-        sys.executable, "-m", "scrapy", "crawl", "site_spider",
-        "-a", f"start_url={url}",
-        "-a", f"max_depth={depth}",
-    ]
+    if getattr(sys, "frozen", False):
+        cmd = [
+            sys.executable, "--scrapy-worker",
+            "crawl", "site_spider",
+            "-a", f"start_url={url}",
+            "-a", f"max_depth={depth}",
+        ]
+        env = {**os.environ, "SCRAPY_SETTINGS_MODULE": SCRAPY_SETTINGS}
+    else:
+        cmd = [
+            sys.executable, "-m", "scrapy", "crawl", "site_spider",
+            "-a", f"start_url={url}",
+            "-a", f"max_depth={depth}",
+        ]
+        env = {
+            **os.environ,
+            "SCRAPY_SETTINGS_MODULE": SCRAPY_SETTINGS,
+            "PYTHONPATH": f"{PROJECT_ROOT}{os.pathsep}{PROJECT_ROOT / 'backend' / 'src'}",
+        }
     proc = subprocess.Popen(
         cmd,
         stdout=subprocess.PIPE,

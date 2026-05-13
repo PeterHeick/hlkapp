@@ -1,0 +1,78 @@
+name: Build Windows Installer
+
+on:
+  workflow_dispatch:          # manuel kørsel fra GitHub UI
+  push:
+    tags:
+      - "v*"                  # v0.1.0, v0.2.0 osv. → laver også GitHub Release
+
+jobs:
+  build:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python 3.13
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+
+      - name: Setup Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install Inno Setup 6
+        run: choco install innosetup --yes --no-progress
+        shell: pwsh
+
+      - name: Install Python dependencies
+        run: uv sync
+
+      - name: Build frontend
+        run: |
+          cd frontend
+          npm ci
+          npm run build
+        shell: pwsh
+
+      - name: Kopier frontend/dist → klinik/static/dist
+        run: |
+          $dest = "backend\src\klinik\static\dist"
+          if (Test-Path $dest) { Remove-Item $dest -Recurse -Force }
+          Copy-Item frontend\dist $dest -Recurse
+        shell: pwsh
+
+      - name: PyInstaller
+        run: uv run --with "pyinstaller>=6.6" pyinstaller KlinikPortal.spec --clean --noconfirm
+        shell: pwsh
+
+      - name: Inno Setup — byg installer
+        run: |
+          New-Item -ItemType Directory -Force -Path installer | Out-Null
+          & "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" KlinikPortal.iss
+        shell: pwsh
+
+      - name: Upload installer som artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: KlinikPortal-windows-installer
+          path: installer\KlinikPortal-*.exe
+          retention-days: 30
+
+      # Kun ved tag-push: opret GitHub Release og vedhæft .exe
+      - name: Opret GitHub Release
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: installer\KlinikPortal-*.exe
+          generate_release_notes: true

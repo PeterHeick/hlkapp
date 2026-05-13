@@ -1,6 +1,14 @@
 # -*- mode: python ; coding: utf-8 -*-
+# Debug-build: sæt DEBUG_BUILD=1 som miljøvariabel for at bygge med konsol og
+# import-tracing. Kør derefter dist/KlinikPortal/KlinikPortal.exe fra en
+# PowerShell — ALLE ImportError og PackageNotFoundError vises på én gang.
+#
+#   $env:DEBUG_BUILD=1; uv run --with pyinstaller pyinstaller KlinikPortal.spec --clean --noconfirm
+#
 import os
 import sys
+
+DEBUG_BUILD = os.environ.get("DEBUG_BUILD") == "1"
 
 # collect_submodules/collect_all kører FØR Analysis() initialiseres, så pathex
 # er ikke aktivt endnu. Lokale pakker der ikke er pip-installerede (kun i
@@ -114,11 +122,11 @@ exe = EXE(
     [],
     exclude_binaries=True,
     name="KlinikPortal",
-    debug=False,
+    debug="imports" if DEBUG_BUILD else False,   # import-tracing i debug-build
     bootloader_ignore_signals=False,
     strip=False,
     upx=False,       # UPX-komprimering trigger antivirus-alarmer
-    console=False,   # ingen terminal-vindue
+    console=DEBUG_BUILD,   # konsol til i debug — ser alle fejl på én gang
     disable_windowed_traceback=False,
     target_arch=None,
     codesign_identity=None,

@@ -1,4 +1,13 @@
 # -*- mode: python ; coding: utf-8 -*-
+import os
+import sys
+
+# collect_submodules() kører FØR Analysis() initialiseres, så pathex er ikke
+# aktivt endnu. scrapy_crawler er ikke installeret som pakke i uv-miljøet, så
+# Python kan ikke importere det — collect_submodules returnerer en tom liste.
+# Fix: tilføj projektroden til sys.path manuelt her.
+sys.path.insert(0, os.path.abspath("."))
+
 from PyInstaller.utils.hooks import collect_data_files, collect_submodules
 
 block_cipher = None
@@ -21,7 +30,17 @@ a = Analysis(
         *collect_submodules("scrapy"),
         *collect_submodules("twisted"),
         *collect_submodules("pandas"),
+        # Eksplicit liste som sikkerhedsnet — collect_submodules virker kun hvis
+        # sys.path-insert ovenfor lykkedes. Begge tilgange skal med.
         *collect_submodules("scrapy_crawler"),
+        "scrapy_crawler",
+        "scrapy_crawler.src",
+        "scrapy_crawler.src.crawler",
+        "scrapy_crawler.src.crawler.settings",
+        "scrapy_crawler.src.crawler.pipelines",
+        "scrapy_crawler.src.crawler.db",
+        "scrapy_crawler.src.crawler.spiders",
+        "scrapy_crawler.src.crawler.spiders.site_spider",
         "uvicorn.protocols.http.h11_impl",
         "uvicorn.protocols.http.httptools_impl",
         "uvicorn.protocols.websockets.websockets_impl",

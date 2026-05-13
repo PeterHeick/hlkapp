@@ -51,4 +51,4 @@ def _open_browser(port: int) -> None:
 if __name__ == "__main__":
     port = _find_free_port(settings.port)
     threading.Thread(target=_open_browser, args=(port,), daemon=True).start()
-    uvicorn.run(app, host="127.0.0.1", port=port, log_level="info")
+    uvicorn.run(app, host="127.0.0.1", port=port, log_level="info", log_config=None)

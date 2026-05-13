@@ -8,7 +8,7 @@ import sys
 # Fix: tilføj projektroden til sys.path manuelt her.
 sys.path.insert(0, os.path.abspath("."))
 
-from PyInstaller.utils.hooks import collect_data_files, collect_submodules
+from PyInstaller.utils.hooks import collect_data_files, collect_submodules, copy_metadata
 
 block_cipher = None
 
@@ -21,10 +21,31 @@ a = Analysis(
         ("assets/graph_template.html", "assets"),
         ("assets/hierarchy_template.html", "assets"),
         ("scrapy_crawler/scrapy.cfg", "scrapy_crawler"),
+        # Datafiler (plugins, certs, schemas osv.)
         *collect_data_files("scrapy"),
         *collect_data_files("twisted"),
         *collect_data_files("lxml"),
         *collect_data_files("certifi"),
+        # dist-info (metadata-mapper) — kræves når pakker kalder
+        # importlib.metadata.version() / requires() ved runtime.
+        # collect_data_files() bundter IKKE dist-info — copy_metadata() gør.
+        *copy_metadata("lxml"),
+        *copy_metadata("scrapy"),
+        *copy_metadata("twisted"),
+        *copy_metadata("certifi"),
+        *copy_metadata("pandas"),
+        *copy_metadata("pydantic"),
+        *copy_metadata("pydantic-settings"),
+        *copy_metadata("fastapi"),
+        *copy_metadata("uvicorn"),
+        *copy_metadata("httpx"),
+        *copy_metadata("psutil"),
+        *copy_metadata("beautifulsoup4"),
+        *copy_metadata("starlette"),
+        *copy_metadata("anyio"),
+        *copy_metadata("h11"),
+        *copy_metadata("httptools"),
+        *copy_metadata("click"),
     ],
     hiddenimports=[
         *collect_submodules("scrapy"),

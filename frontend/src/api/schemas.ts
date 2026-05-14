@@ -33,6 +33,13 @@ export const AppSettingsSchema = z.object({
   port: z.number(),
 })
 
+export const DiscoverResultSchema = z.object({
+  site_name: z.string(),
+  namespaces: z.array(z.string()),
+  wp_v2_collections: z.array(z.string()),
+})
+export type DiscoverResult = z.infer<typeof DiscoverResultSchema>
+
 export type CrawlPage = z.infer<typeof CrawlPageSchema>
 export type CrawlerStatus = z.infer<typeof CrawlerStatusSchema>
 export type CrawlerResults = z.infer<typeof CrawlerResultsSchema>

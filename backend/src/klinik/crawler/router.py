@@ -8,6 +8,7 @@ from ipaddress import ip_address
 from pathlib import Path
 from urllib.parse import urlparse
 
+import httpx
 from fastapi import APIRouter, HTTPException
 from fastapi.responses import FileResponse, StreamingResponse
 from pydantic import BaseModel
@@ -158,6 +159,34 @@ def _csv_response(path: Path, filename: str) -> StreamingResponse:
         media_type="text/csv; charset=utf-8-sig",
         headers={"Content-Disposition": f'attachment; filename="{filename}"'},
     )
+
+
+@router.get("/discover")
+async def discover_wp_api() -> dict:  # type: ignore[type-arg]
+    """Henter /wp-json/ root og returnerer tilgængelige endpoints (ingen auth krævet)."""
+    if not settings.site_url:
+        raise HTTPException(status_code=422, detail="Ingen site_url konfigureret — gem indstillinger først")
+    url = settings.site_url.rstrip("/") + "/wp-json/"
+    try:
+        async with httpx.AsyncClient(timeout=10, follow_redirects=True) as client:
+            resp = await client.get(url)
+            resp.raise_for_status()
+            data = resp.json()
+    except httpx.HTTPStatusError as e:
+        raise HTTPException(status_code=502, detail=f"HTTP {e.response.status_code} fra {url}")
+    except httpx.RequestError as e:
+        raise HTTPException(status_code=502, detail=f"Kunne ikke nå {url}: {e}")
+
+    routes: dict = data.get("routes", {})
+    wp_v2_collections = sorted(
+        r for r in routes
+        if r.startswith("/wp/v2/") and "(?P" not in r
+    )
+    return {
+        "site_name": data.get("name", ""),
+        "namespaces": data.get("namespaces", []),
+        "wp_v2_collections": wp_v2_collections,
+    }
 
 
 async def _finish() -> None:

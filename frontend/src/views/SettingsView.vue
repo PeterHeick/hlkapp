@@ -1,10 +1,30 @@
 <script setup lang="ts">
-import { onMounted } from 'vue'
+import { onMounted, ref } from 'vue'
 import { useSettingsStore } from '@/stores/settings'
 import AppIcon from '@/components/layout/AppIcon.vue'
+import { apiFetch } from '@/api/client'
+import { DiscoverResultSchema } from '@/api/schemas'
+import type { DiscoverResult } from '@/api/schemas'
 
 const settings = useSettingsStore()
 onMounted(() => settings.load())
+
+const discovering = ref(false)
+const discoverResult = ref<DiscoverResult | null>(null)
+const discoverError = ref<string | null>(null)
+
+async function discoverApi() {
+  discovering.value = true
+  discoverError.value = null
+  discoverResult.value = null
+  try {
+    discoverResult.value = DiscoverResultSchema.parse(await apiFetch('/crawler/discover'))
+  } catch (e: unknown) {
+    discoverError.value = e instanceof Error ? e.message : 'Ukendt fejl'
+  } finally {
+    discovering.value = false
+  }
+}
 </script>
 
 <template>
@@ -71,6 +91,46 @@ onMounted(() => settings.load())
               </span>
             </div>
           </div>
+        </div>
+      </div>
+
+      <!-- Diagnostik -->
+      <div class="bg-white border border-slate-200 rounded-lg shadow-sm">
+        <div class="px-5 pt-4 pb-3 border-b border-slate-100">
+          <h2 class="text-[14px] font-semibold text-slate-900 m-0">Diagnostik</h2>
+          <p class="text-[12px] text-slate-500 mt-0.5">Tjek hvilke WordPress REST API endpoints sitet eksponerer.</p>
+        </div>
+        <div class="px-5 py-4 space-y-3">
+          <button
+            @click="discoverApi"
+            :disabled="discovering"
+            class="h-9 px-4 inline-flex items-center gap-1.5 rounded-md border border-slate-300
+                   bg-white text-slate-700 text-[13px] font-medium
+                   hover:bg-slate-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            <AppIcon name="Search" :size="13" />
+            {{ discovering ? 'Henter...' : 'Tjek WP API' }}
+          </button>
+          <div v-if="discoverError" class="text-[12px] text-rose-700">{{ discoverError }}</div>
+          <template v-if="discoverResult">
+            <div class="text-[12px] text-slate-600">
+              <span class="font-medium">Site:</span> {{ discoverResult.site_name }}
+            </div>
+            <div class="text-[12px] text-slate-600">
+              <span class="font-medium">Namespaces:</span> {{ discoverResult.namespaces.join(', ') }}
+            </div>
+            <div class="text-[12px] text-slate-600 font-medium">
+              wp/v2 collections ({{ discoverResult.wp_v2_collections.length }}):
+            </div>
+            <div class="flex flex-wrap gap-1.5">
+              <span
+                v-for="col in discoverResult.wp_v2_collections"
+                :key="col"
+                class="px-1.5 py-0.5 rounded bg-slate-50 border border-slate-200 text-slate-700"
+                style="font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 11px"
+              >{{ col }}</span>
+            </div>
+          </template>
         </div>
       </div>
 

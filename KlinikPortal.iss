@@ -23,6 +23,8 @@ SolidCompression=yes
 WizardStyle=modern
 UninstallDisplayIcon={app}\{#AppExeName}
 ArchitecturesInstallIn64BitMode=x64compatible
+CloseApplications=yes
+RestartApplications=no
 
 [Languages]
 Name: "danish"; MessagesFile: "compiler:Languages\Danish.isl"

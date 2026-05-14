@@ -3,7 +3,6 @@
     "allow": [
       "WebSearch",
       "WebFetch(domain:raw.githubusercontent.com)",
-      "Bash(curl *",
       "Bash(ls *)",
       "Bash(git *)",
       "Bash(sed *)",
@@ -20,7 +19,10 @@
       "Bash(tmux list-windows *)",
       "Bash(echo \"PID: $!\")",
       "Read(/home/peter/Projects/HellerupLaserklinik/**)",
-      "Read(/home/peter/Projects/hellerup-laserklinik/**)"
+      "Read(/home/peter/Projects/hellerup-laserklinik/**)",
+      "Bash(awk 'NR<=90 || NR>=89' /home/peter/Projects/hlkapp/assets/graph_template.html)",
+      "Bash(awk '{print NR\": \"length\\($0\\)}' /home/peter/Projects/hlkapp/assets/graph_template.html)",
+      "Bash(sort -t: -k2 -rn)"
     ]
   }
 }

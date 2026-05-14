@@ -117,5 +117,9 @@ defineProps<{ name: string; size?: number; stroke?: number }>()
       <circle cx="11" cy="11" r="7"/>
       <path d="M21 21l-4.3-4.3"/>
     </template>
+    <!-- List / prisliste -->
+    <template v-else-if="name === 'List'">
+      <path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/>
+    </template>
   </svg>
 </template>

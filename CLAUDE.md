@@ -50,6 +50,7 @@ PYTHONPATH=. SCRAPY_SETTINGS_MODULE=scrapy_crawler.src.crawler.settings \
 
 **Aktive ruter:** `/seo`, `/indstillinger`
 **Fase 3-stubs (alle bruger `StubView.vue`):** `/oversigt`, `/bookinger`, `/statistik`, `/behandlinger`
+**Eget view:** `/prisliste` — prisliste-tabel + "Opdater priser"-knap. Booking-URL og opdater-knap forbliver også under `/indstillinger` (to knapper by design)
 
 **API-endpoints:**
 - `GET /api/health`

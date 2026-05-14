@@ -1,7 +1,10 @@
 import { createRouter, createWebHashHistory } from 'vue-router'
 import SeoView from '@/views/SeoView.vue'
 import SettingsView from '@/views/SettingsView.vue'
-import StubView from '@/views/StubView.vue'
+import OversigtsView from '@/views/OversigtsView.vue'
+import BookingerView from '@/views/BookingerView.vue'
+import BehandlingerView from '@/views/BehandlingerView.vue'
+import PrislisteView from '@/views/PrislisteView.vue'
 
 export default createRouter({
   history: createWebHashHistory(),
@@ -19,23 +22,23 @@ export default createRouter({
     },
     {
       path: '/oversigt',
-      component: StubView,
-      meta: { title: 'Oversigt', heading: 'Oversigt', icon: 'Dashboard', sidebarKey: 'oversigt' },
+      component: OversigtsView,
+      meta: { title: 'Oversigt', sidebarKey: 'oversigt' },
     },
     {
       path: '/bookinger',
-      component: StubView,
-      meta: { title: 'Bookinger', heading: 'Bookinger', icon: 'Calendar', sidebarKey: 'bookinger' },
-    },
-    {
-      path: '/statistik',
-      component: StubView,
-      meta: { title: 'Statistik', heading: 'Bookingstatistik', icon: 'Chart', sidebarKey: 'statistik' },
+      component: BookingerView,
+      meta: { title: 'Bookinger', sidebarKey: 'bookinger' },
     },
     {
       path: '/behandlinger',
-      component: StubView,
-      meta: { title: 'Behandlinger', heading: 'Behandlinger', icon: 'Scissors', sidebarKey: 'behandlinger' },
+      component: BehandlingerView,
+      meta: { title: 'Behandlinger', sidebarKey: 'behandlinger' },
+    },
+    {
+      path: '/prisliste',
+      component: PrislisteView,
+      meta: { title: 'Prisliste', sidebarKey: 'prisliste' },
     },
   ],
 })

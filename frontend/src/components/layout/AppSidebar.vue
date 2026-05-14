@@ -27,13 +27,13 @@ onUnmounted(() => { if (healthTimer) clearInterval(healthTimer) })
 
 const tools = [
   { key: 'seo',           path: '/#/seo',           icon: 'Globe',    label: 'SEO & Hjemmeside' },
-  { key: 'indstillinger', path: '/#/indstillinger',  icon: 'Settings', label: 'Indstillinger' },
+  { key: 'indstillinger', path: '/#/indstillinger', icon: 'Settings', label: 'Indstillinger' },
 ]
-const stubs = [
+const klinik = [
   { key: 'oversigt',     path: '/#/oversigt',     icon: 'Dashboard', label: 'Oversigt' },
   { key: 'bookinger',    path: '/#/bookinger',    icon: 'Calendar',  label: 'Bookinger' },
-  { key: 'statistik',    path: '/#/statistik',    icon: 'Chart',     label: 'Statistik' },
   { key: 'behandlinger', path: '/#/behandlinger', icon: 'Scissors',  label: 'Behandlinger' },
+  { key: 'prisliste',   path: '/#/prisliste',    icon: 'List',      label: 'Prisliste' },
 ]
 </script>
 
@@ -78,22 +78,25 @@ const stubs = [
         </a>
       </div>
 
-      <div class="mt-5 px-4 pb-1.5 text-[10px] font-semibold uppercase tracking-[0.14em]
-                  text-slate-500 flex items-center gap-1.5">
-        <span>Bookinger</span>
-        <span class="text-slate-600 normal-case tracking-normal font-normal">(kommer snart)</span>
+      <div class="mt-5 px-4 pb-1.5 text-[10px] font-semibold uppercase tracking-[0.14em] text-slate-500">
+        Klinik
       </div>
       <div class="flex flex-col gap-0.5">
-        <div
-          v-for="item in stubs"
+        <a
+          v-for="item in klinik"
           :key="item.key"
-          class="flex items-center gap-2.5 px-3 py-2 mx-2 rounded-md text-[13px]
-                 font-medium text-slate-500/70 cursor-not-allowed"
+          :href="item.path"
+          class="flex items-center gap-2.5 px-3 py-2 mx-2 rounded-md text-[13px] font-medium
+                 transition-colors no-underline"
+          :class="active === item.key
+            ? 'bg-indigo-500/15 text-white ring-1 ring-inset ring-indigo-400/25'
+            : 'text-slate-300 hover:bg-slate-800/60 hover:text-white'"
         >
-          <span class="text-slate-600"><AppIcon :name="item.icon" :size="16" /></span>
+          <span :class="active === item.key ? 'text-indigo-300' : 'text-slate-400'">
+            <AppIcon :name="item.icon" :size="16" />
+          </span>
           <span class="flex-1">{{ item.label }}</span>
-          <span class="w-1.5 h-1.5 rounded-full bg-slate-700" />
-        </div>
+        </a>
       </div>
     </nav>
 

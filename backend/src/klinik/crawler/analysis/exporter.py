@@ -13,7 +13,7 @@ from klinik.crawler.repository import CrawlRepository
 def _atomic_write(df: pd.DataFrame, path: Path) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     tmp = path.with_suffix(".tmp")
-    df.to_csv(tmp, index=False, encoding="utf-8-sig")
+    df.to_csv(tmp, index=False, encoding="utf-8-sig", sep=";")
     tmp.replace(path)
 
 
@@ -42,7 +42,7 @@ def export_matrix(
     matrix = pd.crosstab(links["source_url"], links["target_url"])
     out.parent.mkdir(parents=True, exist_ok=True)
     tmp = out.with_suffix(".tmp")
-    matrix.to_csv(tmp, encoding="utf-8-sig")
+    matrix.to_csv(tmp, encoding="utf-8-sig", sep=";")
     tmp.replace(out)
     return out
 

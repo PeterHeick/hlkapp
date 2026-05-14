@@ -2,7 +2,7 @@
 ; Installerer til %LOCALAPPDATA%\Programs\KlinikPortal\ (ingen UAC)
 
 #define AppName "KlinikPortal"
-#define AppVersion "0.3.1"
+#define AppVersion "2.0.1"
 #define AppPublisher "Hellerup Laserklinik"
 #define AppExeName "KlinikPortal.exe"
 #define AppSourceDir "dist\KlinikPortal"
@@ -34,6 +34,8 @@ Name: "desktopicon"; Description: "Opret genvej på skrivebordet"; GroupDescript
 
 [Files]
 Source: "{#AppSourceDir}\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
+; config.json medfølger ved første installation — springes over hvis filen allerede findes (opgradering)
+Source: "data\config.json"; DestDir: "{app}\data"; Flags: onlyifdoesntexist
 
 [Dirs]
 Name: "{app}\data"

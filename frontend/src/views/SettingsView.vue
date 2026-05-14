@@ -1,12 +1,14 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue'
 import { useSettingsStore } from '@/stores/settings'
+import { useStatistikStore } from '@/stores/statistik'
 import AppIcon from '@/components/layout/AppIcon.vue'
 import { apiFetch } from '@/api/client'
 import { DiscoverResultSchema } from '@/api/schemas'
 import type { DiscoverResult } from '@/api/schemas'
 
 const settings = useSettingsStore()
+const statistik = useStatistikStore()
 onMounted(() => settings.load())
 
 const discovering = ref(false)
@@ -64,31 +66,69 @@ async function discoverApi() {
 
       <!-- Gecko API sektion -->
       <div class="bg-white border border-slate-200 rounded-lg shadow-sm">
-        <div class="px-5 pt-4 pb-3 border-b border-slate-100 flex items-center justify-between">
-          <div>
-            <h2 class="text-[14px] font-semibold text-slate-900 m-0">Gecko Booking API</h2>
-            <p class="text-[12px] text-slate-500 mt-0.5">Forbindelse til booking-systemet.</p>
-          </div>
-          <span class="text-[10.5px] uppercase tracking-wider px-2 py-0.5 rounded
-                       bg-slate-100 text-slate-600 ring-1 ring-inset ring-slate-200">
-            Fase 3
-          </span>
+        <div class="px-5 pt-4 pb-3 border-b border-slate-100">
+          <h2 class="text-[14px] font-semibold text-slate-900 m-0">Gecko Booking API</h2>
+          <p class="text-[12px] text-slate-500 mt-0.5">Forbindelse til booking-systemet.</p>
         </div>
-        <div class="px-5 py-5">
+        <div class="px-5 py-5 space-y-4">
           <div class="space-y-1.5">
             <label class="text-[12.5px] font-medium text-slate-800 block">API Token</label>
-            <p class="text-[11.5px] text-slate-500">Tilsluttes i en kommende opdatering.</p>
-            <div class="relative">
+            <input
+              v-model="settings.geckoToken"
+              type="password"
+              placeholder="Indsæt token fra Gecko Booking"
+              class="w-full h-9 px-3 rounded-md bg-white border border-slate-300 text-[13px]
+                     text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-200
+                     focus:border-indigo-400"
+              style="font-family: 'JetBrains Mono', ui-monospace, monospace"
+            />
+          </div>
+          <button
+            @click="settings.save()"
+            class="h-8 px-4 inline-flex items-center gap-1.5 rounded-md bg-indigo-600
+                   hover:bg-indigo-700 text-white text-[12.5px] font-semibold shadow-sm
+                   transition-colors"
+          >
+            <AppIcon name="Save" :size="13" /> Gem token
+          </button>
+
+          <hr class="border-slate-100" />
+
+          <div class="space-y-2">
+            <div>
+              <p class="text-[12.5px] font-medium text-slate-800">Behandlingspriser</p>
+              <p class="text-[11.5px] text-slate-500 mt-0.5">
+                Henter priser fra Gecko bookingsiden og gemmer dem lokalt til omsætningsberegning.
+              </p>
+            </div>
+            <div class="space-y-1.5">
+              <label class="text-[12.5px] font-medium text-slate-800 block">Booking-side URL</label>
               <input
-                type="password"
-                disabled
-                placeholder="Ikke aktiv endnu"
-                class="w-full h-9 px-3 pr-9 rounded-md bg-slate-50 border border-slate-200
-                       text-[13px] text-slate-400 cursor-not-allowed"
+                v-model="settings.geckoBookingUrl"
+                type="url"
+                placeholder="https://klinik.app.geckobooking.dk/site/booking.php?..."
+                class="w-full h-9 px-3 rounded-md bg-white border border-slate-300 text-[12px]
+                       text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-200
+                       focus:border-indigo-400"
+                style="font-family: 'JetBrains Mono', ui-monospace, monospace"
               />
-              <span class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400">
-                <AppIcon name="Lock" :size="14" />
-              </span>
+              <p class="text-[11px] text-slate-400">Den offentlige booking-URL med icCode og bId parametre.</p>
+            </div>
+            <button
+              @click="statistik.syncPrices()"
+              :disabled="statistik.syncRunning"
+              class="h-8 px-4 inline-flex items-center gap-1.5 rounded-md border border-slate-300
+                     bg-white text-slate-700 text-[12.5px] font-medium
+                     hover:bg-slate-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <AppIcon name="Search" :size="13" />
+              {{ statistik.syncRunning ? `Henter... (${statistik.syncCount})` : 'Opdater priser' }}
+            </button>
+            <div v-if="statistik.syncError" class="text-[12px] text-rose-700">
+              {{ statistik.syncError }}
+            </div>
+            <div v-if="!statistik.syncRunning && statistik.syncCount > 0" class="text-[12px] text-emerald-700">
+              {{ statistik.syncCount }} behandlinger hentet.
             </div>
           </div>
         </div>

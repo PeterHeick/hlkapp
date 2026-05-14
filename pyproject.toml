@@ -13,6 +13,7 @@ dependencies = [
     "beautifulsoup4>=4.12",
     "pandas>=2.2",
     "psutil>=5.9",
+    "selenium>=4.20",
 ]
 
 [project.optional-dependencies]

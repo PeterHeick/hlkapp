@@ -2,6 +2,11 @@ data/
 logs/
 *.db
 .env
+*.log
+fejl
+debug_*.py
+ExcelMakroer/
+.claude/
 frontend/node_modules/
 frontend/dist/
 backend/src/klinik/static/dist/

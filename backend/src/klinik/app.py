@@ -51,11 +51,15 @@ class SettingsOut(BaseModel):
     site_url: str
     max_depth: int
     port: int
+    gecko_api_token: str
+    gecko_booking_url: str
 
 
 class SettingsIn(BaseModel):
     site_url: str | None = None
     max_depth: int | None = None
+    gecko_api_token: str | None = None
+    gecko_booking_url: str | None = None
 
 
 @app.get("/api/settings", response_model=SettingsOut)
@@ -64,6 +68,8 @@ async def get_settings() -> SettingsOut:
         site_url=settings.site_url,
         max_depth=settings.max_depth,
         port=settings.port,
+        gecko_api_token=settings.gecko_api_token,
+        gecko_booking_url=settings.gecko_booking_url,
     )
 
 
@@ -73,5 +79,7 @@ async def put_settings(body: SettingsIn) -> JSONResponse:
         settings.save,
         site_url=body.site_url,
         max_depth=body.max_depth,
+        gecko_api_token=body.gecko_api_token,
+        gecko_booking_url=body.gecko_booking_url,
     )
     return JSONResponse({"ok": True})

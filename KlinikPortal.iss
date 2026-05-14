@@ -50,6 +50,14 @@ Filename: "{app}\{#AppExeName}"; Description: "Start {#AppName}"; Flags: nowait 
 Filename: "taskkill.exe"; Parameters: "/F /IM {#AppExeName}"; Flags: runhidden; RunOnceId: "KillApp"
 
 [Code]
+procedure CurStepChanged(CurStep: TSetupStep);
+var ResultCode: Integer;
+begin
+  if CurStep = ssInstall then
+    Exec('taskkill.exe', '/F /IM {#AppExeName} /T', '',
+         SW_HIDE, ewNoWait, ResultCode);
+end;
+
 procedure CurUninstallStepChanged(CurUninstallStep: TUninstallStep);
 begin
   if CurUninstallStep = usPostUninstall then

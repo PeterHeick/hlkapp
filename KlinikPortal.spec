@@ -20,11 +20,12 @@ from PyInstaller.utils.hooks import collect_all, copy_metadata
 
 # collect_all() gør ALT i ét kald: datas + binaries + hiddenimports + metadata.
 # Brug det for pakker med dynamiske imports, plugins eller C-extensions.
-scrapy_d,   scrapy_b,   scrapy_h   = collect_all("scrapy")
-twisted_d,  twisted_b,  twisted_h  = collect_all("twisted")
-lxml_d,     lxml_b,     lxml_h     = collect_all("lxml")
-pandas_d,   pandas_b,   pandas_h   = collect_all("pandas")
-certifi_d,  certifi_b,  certifi_h  = collect_all("certifi")
+scrapy_d,    scrapy_b,    scrapy_h    = collect_all("scrapy")
+twisted_d,   twisted_b,   twisted_h   = collect_all("twisted")
+lxml_d,      lxml_b,      lxml_h      = collect_all("lxml")
+pandas_d,    pandas_b,    pandas_h    = collect_all("pandas")
+certifi_d,   certifi_b,   certifi_h   = collect_all("certifi")
+selenium_d,  selenium_b,  selenium_h  = collect_all("selenium")
 
 # Saml metadata (dist-info) for ALLE installerede pakker dynamisk.
 # Undgår at manuelt gætte hvilke pakker der kalder importlib.metadata ved runtime.
@@ -48,6 +49,7 @@ a = Analysis(
         *lxml_b,
         *pandas_b,
         *certifi_b,
+        *selenium_b,
     ],
     datas=[
         # App-specifikke filer
@@ -61,6 +63,7 @@ a = Analysis(
         *lxml_d,
         *pandas_d,
         *certifi_d,
+        *selenium_d,
         # Metadata (dist-info) for ALLE installerede pakker — dynamisk genereret
         # så vi ikke manuelt skal gætte hvilke pakker kalder importlib.metadata
         # ved runtime. Undgår PackageNotFoundError uanset afhængighedstræet.
@@ -73,6 +76,7 @@ a = Analysis(
         *lxml_h,
         *pandas_h,
         *certifi_h,
+        *selenium_h,
         # scrapy_crawler: lokalpakke — collect_all virker ikke for ikke-installerede
         # pakker, så eksplicit liste bruges som sikkerhedsnet
         "scrapy_crawler",

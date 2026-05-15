@@ -57,9 +57,11 @@ function problemKind(page: CrawlPage): string | null {
             class="px-3 py-2 font-semibold w-[110px] cursor-pointer select-none hover:text-slate-900"
             @click="toggleSort"
           >
-            Sidst ændret
-            <span class="ml-0.5 text-slate-400">
-              {{ sortDir === 'desc' ? '↓' : sortDir === 'asc' ? '↑' : '↕' }}
+            <span class="inline-flex items-center gap-1">
+              Sidst ændret
+              <span :class="sortDir ? 'text-slate-700' : 'text-slate-300'">
+                {{ sortDir === 'desc' ? '↓' : sortDir === 'asc' ? '↑' : '↓' }}
+              </span>
             </span>
           </th>
           <th class="px-3 py-2 font-semibold">Problem</th>

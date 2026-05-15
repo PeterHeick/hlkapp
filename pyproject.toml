@@ -1,6 +1,6 @@
 [project]
 name = "klinik-portal"
-version = "2.1.2"
+version = "2.2.0"
 description = "Lokal desktop-app til Hellerup Laserklinik — SEO-analyse og booking-statistik"
 requires-python = ">=3.13"
 dependencies = [

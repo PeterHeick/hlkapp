@@ -1,9 +1,28 @@
 <script setup lang="ts">
+import { computed, ref } from 'vue'
 import type { CrawlPage } from '@/api/schemas'
 import StatusBadge from './StatusBadge.vue'
 import ProblemTag from './ProblemTag.vue'
 
-defineProps<{ rows: CrawlPage[] }>()
+const props = defineProps<{ rows: CrawlPage[] }>()
+
+type SortDir = 'asc' | 'desc' | null
+const sortDir = ref<SortDir>(null)
+
+function toggleSort() {
+  if (sortDir.value === null) sortDir.value = 'desc'
+  else if (sortDir.value === 'desc') sortDir.value = 'asc'
+  else sortDir.value = null
+}
+
+const sortedRows = computed(() => {
+  if (!sortDir.value) return props.rows
+  return [...props.rows].sort((a, b) => {
+    const av = a.last_modified ?? ''
+    const bv = b.last_modified ?? ''
+    return sortDir.value === 'desc' ? bv.localeCompare(av) : av.localeCompare(bv)
+  })
+})
 
 function formatDate(iso: string | null): string {
   if (!iso) return '—'
@@ -34,13 +53,21 @@ function problemKind(page: CrawlPage): string | null {
           <th class="px-3 py-2 font-semibold w-[48%]">URL</th>
           <th class="px-3 py-2 font-semibold w-[88px]">Status</th>
           <th class="px-3 py-2 font-semibold w-[72px] text-right tabular-nums">Dybde</th>
-          <th class="px-3 py-2 font-semibold w-[110px]">Sidst ændret</th>
+          <th
+            class="px-3 py-2 font-semibold w-[110px] cursor-pointer select-none hover:text-slate-900"
+            @click="toggleSort"
+          >
+            Sidst ændret
+            <span class="ml-0.5 text-slate-400">
+              {{ sortDir === 'desc' ? '↓' : sortDir === 'asc' ? '↑' : '↕' }}
+            </span>
+          </th>
           <th class="px-3 py-2 font-semibold">Problem</th>
         </tr>
       </thead>
       <tbody>
         <tr
-          v-for="page in rows"
+          v-for="page in sortedRows"
           :key="page.url"
           class="border-b border-slate-100 last:border-b-0 hover:bg-slate-50/60 transition-colors"
           :class="rowClass(page)"

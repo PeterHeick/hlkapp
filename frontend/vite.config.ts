@@ -5,6 +5,12 @@ import { fileURLToPath, URL } from 'node:url'
 import { readFileSync, existsSync } from 'node:fs'
 import { resolve } from 'node:path'
 
+function getAppVersion(): string {
+  const toml = readFileSync(resolve(__dirname, '../pyproject.toml'), 'utf-8')
+  const match = toml.match(/^version\s*=\s*"([^"]+)"/m)
+  return match ? match[1] : '0.0.0'
+}
+
 function getBackendPort(): number {
   const configPath = resolve(__dirname, '../data/config.json')
   if (existsSync(configPath)) {
@@ -19,6 +25,9 @@ function getBackendPort(): number {
 const backendPort = getBackendPort()
 
 export default defineConfig({
+  define: {
+    __APP_VERSION__: JSON.stringify(getAppVersion()),
+  },
   plugins: [vue(), tailwindcss()],
   resolve: {
     alias: {

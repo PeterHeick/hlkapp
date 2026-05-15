@@ -4,6 +4,8 @@ import { useRoute } from 'vue-router'
 import AppIcon from './AppIcon.vue'
 import { apiFetch } from '@/api/client'
 
+const appVersion = __APP_VERSION__
+
 const route = useRoute()
 const active = computed(() => route.meta.sidebarKey as string ?? '')
 
@@ -103,7 +105,7 @@ const klinik = [
     <!-- Footer -->
     <div class="px-4 py-3 border-t border-slate-800/80 text-[11px] text-slate-500
                 flex items-center justify-between">
-      <span>v0.1.0 · lokal</span>
+      <span>v{{ appVersion }} · lokal</span>
       <span class="flex items-center gap-1.5">
         <span
           class="w-1.5 h-1.5 rounded-full transition-colors"

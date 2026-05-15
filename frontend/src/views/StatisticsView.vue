@@ -11,10 +11,6 @@ function isoToDanish(iso: string): string {
   return `${d}/${m}/${y}`
 }
 
-function formatDate(iso: string): string {
-  return isoToDanish(iso)
-}
-
 function danishToIso(val: string): string | null {
   const m = val.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/)
   if (!m) return null

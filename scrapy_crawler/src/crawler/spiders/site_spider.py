@@ -100,6 +100,7 @@ class SiteSpider(scrapy.Spider):
                 "title": title,
                 "word_count": word_count,
                 "redirect_chain": "[]",
+                "last_modified": item.get("modified") or None,
             }
             yield from self._extract_links(page_url, raw_content)
 

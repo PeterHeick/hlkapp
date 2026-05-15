@@ -27,6 +27,7 @@ def init_db(conn: sqlite3.Connection) -> None:
             word_count     INTEGER DEFAULT 0,
             is_orphan      INTEGER DEFAULT 0,
             redirect_chain TEXT DEFAULT '[]',
+            last_modified  TEXT,
             crawled_at     TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         );
         CREATE TABLE IF NOT EXISTS crawl_links (
@@ -40,6 +41,11 @@ def init_db(conn: sqlite3.Connection) -> None:
         CREATE INDEX IF NOT EXISTS idx_cl_target ON crawl_links(target_url);
     """)
     conn.commit()
+    try:
+        conn.execute("ALTER TABLE crawl_pages ADD COLUMN last_modified TEXT")
+        conn.commit()
+    except sqlite3.OperationalError:
+        pass
 
 
 def reset_db(conn: sqlite3.Connection) -> None:

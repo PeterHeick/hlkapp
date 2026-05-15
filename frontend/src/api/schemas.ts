@@ -7,6 +7,7 @@ export const CrawlPageSchema = z.object({
   depth: z.number(),
   is_orphan: z.boolean(),
   word_count: z.number(),
+  last_modified: z.string().nullable(),
 })
 
 export const CrawlLinkCountSchema = z.object({

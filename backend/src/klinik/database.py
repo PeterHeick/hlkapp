@@ -29,6 +29,7 @@ def init_db() -> None:
                 word_count   INTEGER DEFAULT 0,
                 is_orphan    INTEGER DEFAULT 0,
                 redirect_chain TEXT DEFAULT '[]',
+                last_modified  TEXT,
                 crawled_at   TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             );
             CREATE TABLE IF NOT EXISTS crawl_links (
@@ -50,5 +51,10 @@ def init_db() -> None:
         """)
         settings.exports_dir.mkdir(parents=True, exist_ok=True)
         conn.commit()
+        try:
+            conn.execute("ALTER TABLE crawl_pages ADD COLUMN last_modified TEXT")
+            conn.commit()
+        except sqlite3.OperationalError:
+            pass
     finally:
         conn.close()

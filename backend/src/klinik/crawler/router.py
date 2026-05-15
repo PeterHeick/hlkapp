@@ -98,6 +98,7 @@ async def crawl_results() -> dict:  # type: ignore[type-arg]
             "depth": int(row.get("depth") or 0),
             "is_orphan": bool(row.get("is_orphan")),
             "word_count": int(row.get("word_count") or 0),
+            "last_modified": row.get("last_modified") or None,
         }
         for _, row in pages.iterrows()
     ]

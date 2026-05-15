@@ -32,8 +32,8 @@ class SqlitePipeline:
             self._conn.execute(
                 """INSERT OR REPLACE INTO crawl_pages
                    (url, status_code, depth, parent_url,
-                    title, word_count, redirect_chain)
-                   VALUES (?, ?, ?, ?, ?, ?, ?)""",
+                    title, word_count, redirect_chain, last_modified)
+                   VALUES (?, ?, ?, ?, ?, ?, ?, ?)""",
                 (
                     item.get("url"),
                     item.get("status_code"),
@@ -42,6 +42,7 @@ class SqlitePipeline:
                     item.get("title", ""),
                     item.get("word_count", 0),
                     item.get("redirect_chain", "[]"),
+                    item.get("last_modified"),
                 ),
             )
             self._conn.commit()

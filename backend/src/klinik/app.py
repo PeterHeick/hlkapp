@@ -2,6 +2,9 @@
 from __future__ import annotations
 
 import asyncio
+import os
+import signal
+import threading
 from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
 from pathlib import Path
@@ -82,4 +85,10 @@ async def put_settings(body: SettingsIn) -> JSONResponse:
         gecko_api_token=body.gecko_api_token,
         gecko_booking_url=body.gecko_booking_url,
     )
+    return JSONResponse({"ok": True})
+
+
+@app.post("/api/shutdown")
+async def shutdown() -> JSONResponse:
+    threading.Timer(0.3, lambda: os.kill(os.getpid(), signal.SIGTERM)).start()
     return JSONResponse({"ok": True})

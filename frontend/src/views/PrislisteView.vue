@@ -5,6 +5,17 @@ import AppIcon from '@/components/layout/AppIcon.vue'
 
 const stat = useStatistikStore()
 onMounted(() => stat.loadPrices())
+
+const downloading = ref(false)
+
+function downloadPrisliste() {
+  const a = document.createElement('a')
+  a.href = '/api/stats/export/prisliste'
+  a.download = 'prisliste.csv'
+  a.click()
+  downloading.value = true
+  setTimeout(() => { downloading.value = false }, 2000)
+}
 </script>
 
 <template>
@@ -17,16 +28,30 @@ onMounted(() => stat.loadPrices())
           <h1 class="text-[15px] font-semibold text-slate-900">Prisliste</h1>
           <p class="text-[12px] text-slate-500 mt-0.5">Behandlingspriser hentet fra Gecko booking-siden.</p>
         </div>
-        <button
-          @click="stat.syncPrices()"
-          :disabled="stat.syncRunning"
-          class="h-8 px-4 inline-flex items-center gap-1.5 rounded-md border border-slate-300
-                 bg-white text-slate-700 text-[12.5px] font-medium
-                 hover:bg-slate-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-        >
-          <AppIcon name="Search" :size="13" />
-          {{ stat.syncRunning ? `Henter... (${stat.syncCount})` : 'Opdater priser' }}
-        </button>
+        <div class="flex gap-2">
+          <button
+            @click="stat.syncPrices()"
+            :disabled="stat.syncRunning"
+            class="h-8 px-4 inline-flex items-center gap-1.5 rounded-md border border-slate-300
+                   bg-white text-slate-700 text-[12.5px] font-medium
+                   hover:bg-slate-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            <AppIcon name="Search" :size="13" />
+            {{ stat.syncRunning ? `Henter... (${stat.syncCount})` : 'Opdater priser' }}
+          </button>
+          <button
+            @click="downloadPrisliste()"
+            :disabled="Object.keys(stat.priceList).length === 0 || downloading"
+            class="h-8 px-4 inline-flex items-center gap-1.5 rounded-md border transition-colors
+                   text-[12.5px] font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+            :class="downloading
+              ? 'border-emerald-400 bg-emerald-50 text-emerald-700'
+              : 'border-slate-300 bg-white text-slate-700 hover:bg-slate-50'"
+          >
+            <AppIcon :name="downloading ? 'Check' : 'Download'" :size="13" />
+            {{ downloading ? 'Hentet' : 'Hent CSV' }}
+          </button>
+        </div>
       </div>
 
       <!-- Fejl / success -->

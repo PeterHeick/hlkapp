@@ -37,7 +37,7 @@ def load_prices() -> dict[str, float]:
         return {}
     prices: dict[str, float] = {}
     with _PRICES_PATH.open(encoding="utf-8") as f:
-        reader = csv.DictReader(f)
+        reader = csv.DictReader(f, delimiter=';')
         for row in reader:
             navn = (row.get("navn") or "").strip()
             pris_raw = (row.get("pris") or "0").strip()

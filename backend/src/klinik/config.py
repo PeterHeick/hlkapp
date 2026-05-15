@@ -33,7 +33,7 @@ class Settings(BaseSettings):
     site_url: str = ""
     last_url: str = ""
     max_depth: int = 5
-    port: int = 8765
+    port: int = 8767
     db_path: Path = _DATA_DIR / "klinik.db"
     exports_dir: Path = _DATA_DIR / "exports"
     assets_dir: Path = _ASSETS_DIR

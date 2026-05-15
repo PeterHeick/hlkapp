@@ -6,6 +6,17 @@ import AppIcon from '@/components/layout/AppIcon.vue'
 const stat = useStatistikStore()
 onMounted(() => stat.loadPrices())
 
+const downloadingBehandlinger = ref(false)
+
+function downloadBehandlinger() {
+  const a = document.createElement('a')
+  a.href = `/api/stats/export/behandlinger?start=${stat.dateFrom}&end=${stat.dateTo}`
+  a.download = 'behandlinger.csv'
+  a.click()
+  downloadingBehandlinger.value = true
+  setTimeout(() => { downloadingBehandlinger.value = false }, 2000)
+}
+
 const activeTab = ref<'krtime' | 'ressourcer'>('krtime')
 const tabs = [
   { key: 'krtime' as const,     label: 'Behandlinger' },
@@ -83,7 +94,7 @@ const ressourcerData = computed(() => {
 
       <!-- Tab-panel -->
       <div class="bg-white border border-slate-200 rounded-lg shadow-sm overflow-hidden">
-        <div class="flex border-b border-slate-200">
+        <div class="flex items-center border-b border-slate-200">
           <button v-for="tab in tabs" :key="tab.key" @click="activeTab = tab.key"
             class="px-5 py-3 text-[13px] font-medium transition-colors border-b-2"
             :class="activeTab === tab.key
@@ -91,6 +102,17 @@ const ressourcerData = computed(() => {
               : 'text-slate-500 border-transparent hover:text-slate-700 hover:bg-slate-50'">
             {{ tab.label }}
           </button>
+          <div class="ml-auto px-3">
+            <button @click="downloadBehandlinger()" :disabled="!stat.treatments || downloadingBehandlinger"
+              class="h-7 px-3 inline-flex items-center gap-1.5 rounded border transition-colors
+                     text-[12px] font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+              :class="downloadingBehandlinger
+                ? 'border-emerald-400 bg-emerald-50 text-emerald-700'
+                : 'border-slate-300 bg-white text-slate-600 hover:bg-slate-50'">
+              <AppIcon :name="downloadingBehandlinger ? 'Check' : 'Download'" :size="12" />
+              {{ downloadingBehandlinger ? 'Hentet' : 'Hent CSV' }}
+            </button>
+          </div>
         </div>
 
         <!-- Behandlinger -->

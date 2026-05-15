@@ -96,9 +96,9 @@ def sync_prices() -> None:
 
             _PRICES_PATH.parent.mkdir(exist_ok=True)
             with _PRICES_PATH.open("w", encoding="utf-8") as f:
-                f.write("navn,pris\n")
+                f.write("navn;pris\n")
                 for navn, pris in behandlinger:
-                    f.write(f"{navn},{int(round(pris))}\n")
+                    f.write(f"{navn};{int(round(pris))}\n")
             _sync_count = len(behandlinger)
         finally:
             driver.quit()

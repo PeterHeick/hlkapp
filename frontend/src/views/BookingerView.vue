@@ -5,6 +5,17 @@ import AppIcon from '@/components/layout/AppIcon.vue'
 
 const stat = useStatistikStore()
 
+const downloading = ref(false)
+
+function downloadBehandleroversigt() {
+  const a = document.createElement('a')
+  a.href = `/api/stats/export/behandleroversigt?start=${stat.dateFrom}&end=${stat.dateTo}`
+  a.download = 'behandleroversigt.csv'
+  a.click()
+  downloading.value = true
+  setTimeout(() => { downloading.value = false }, 2000)
+}
+
 // --- Behandler-søjlediagram ---
 const PALETTE = ['#6366f1','#ec4899','#f59e0b','#10b981','#3b82f6','#8b5cf6','#ef4444','#14b8a6']
 
@@ -341,11 +352,22 @@ const heatmapData = computed(() => {
 
       <!-- Behandleroversigt -->
       <div class="bg-white border border-slate-200 rounded-lg shadow-sm overflow-hidden">
-        <div class="px-5 py-3 border-b border-slate-100">
-          <h2 class="text-[13px] font-semibold text-slate-800">Behandleroversigt</h2>
-          <p class="text-[11.5px] text-slate-500 mt-0.5">
-            Omsætning pr. behandler fordelt på behandlingstyper. Sammenlign farveprofiler for at se om forskellen skyldes mix eller volumen.
-          </p>
+        <div class="px-5 py-3 border-b border-slate-100 flex items-start justify-between gap-3">
+          <div>
+            <h2 class="text-[13px] font-semibold text-slate-800">Behandleroversigt</h2>
+            <p class="text-[11.5px] text-slate-500 mt-0.5">
+              Omsætning pr. behandler fordelt på behandlingstyper. Sammenlign farveprofiler for at se om forskellen skyldes mix eller volumen.
+            </p>
+          </div>
+          <button @click="downloadBehandleroversigt()" :disabled="!stat.providersBreakdown || downloading"
+            class="shrink-0 h-8 px-3 inline-flex items-center gap-1.5 rounded-md border transition-colors
+                   text-[12px] font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+            :class="downloading
+              ? 'border-emerald-400 bg-emerald-50 text-emerald-700'
+              : 'border-slate-300 bg-white text-slate-700 hover:bg-slate-50'">
+            <AppIcon :name="downloading ? 'Check' : 'Download'" :size="12" />
+            {{ downloading ? 'Hentet' : 'Hent CSV' }}
+          </button>
         </div>
         <div class="p-5">
           <p v-if="!effektivitetData" class="text-[12.5px] text-slate-400 text-center py-8">

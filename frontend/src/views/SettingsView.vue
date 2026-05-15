@@ -27,6 +27,18 @@ async function discoverApi() {
     discovering.value = false
   }
 }
+
+const shuttingDown = ref(false)
+
+async function shutdown() {
+  if (!confirm('Luk serveren ned?')) return
+  shuttingDown.value = true
+  try {
+    await apiFetch('/shutdown', { method: 'POST' })
+  } catch {
+    // Server lukker forbindelsen — forventet
+  }
+}
 </script>
 
 <template>
@@ -201,6 +213,26 @@ async function discoverApi() {
         >
           <AppIcon name="Save" :size="13" /> Gem indstillinger
         </button>
+      </div>
+
+      <!-- Luk server -->
+      <div class="bg-white border border-rose-200 rounded-lg shadow-sm">
+        <div class="px-5 pt-4 pb-3 border-b border-rose-100">
+          <h2 class="text-[14px] font-semibold text-rose-700 m-0">Luk server</h2>
+          <p class="text-[12px] text-slate-500 mt-0.5">Lukker KlinikPortal-serveren helt ned.</p>
+        </div>
+        <div class="px-5 py-4">
+          <button
+            @click="shutdown"
+            :disabled="shuttingDown"
+            class="h-9 px-4 inline-flex items-center gap-1.5 rounded-md bg-rose-600
+                   hover:bg-rose-700 text-white text-[13px] font-semibold shadow-sm
+                   transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            <AppIcon name="Power" :size="13" />
+            {{ shuttingDown ? 'Lukker ned...' : 'Luk server' }}
+          </button>
+        </div>
       </div>
     </div>
   </div>

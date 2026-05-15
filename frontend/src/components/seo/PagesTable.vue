@@ -10,8 +10,8 @@ type SortDir = 'asc' | 'desc' | null
 const sortDir = ref<SortDir>(null)
 
 function toggleSort() {
-  if (sortDir.value === null) sortDir.value = 'desc'
-  else if (sortDir.value === 'desc') sortDir.value = 'asc'
+  if (sortDir.value === null) sortDir.value = 'asc'
+  else if (sortDir.value === 'asc') sortDir.value = 'desc'
   else sortDir.value = null
 }
 

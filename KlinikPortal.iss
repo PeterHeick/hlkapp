@@ -2,7 +2,7 @@
 ; Installerer til %LOCALAPPDATA%\Programs\KlinikPortal\ (ingen UAC)
 
 #define AppName "KlinikPortal"
-#define AppVersion "2.0.2"
+#define AppVersion "2.0.3"
 #define AppPublisher "Hellerup Laserklinik"
 #define AppExeName "KlinikPortal.exe"
 #define AppSourceDir "dist\KlinikPortal"

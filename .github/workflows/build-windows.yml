@@ -61,6 +61,14 @@ jobs:
         run: uv run --with "pyinstaller>=6.6" pyinstaller KlinikPortal.spec --clean --noconfirm
         shell: pwsh
 
+      - name: Opret tom data/config.json til installer
+        run: |
+          New-Item -ItemType Directory -Force -Path data | Out-Null
+          if (-not (Test-Path data\config.json)) {
+            '{}' | Set-Content data\config.json -Encoding utf8
+          }
+        shell: pwsh
+
       - name: Inno Setup — byg installer
         run: |
           New-Item -ItemType Directory -Force -Path installer | Out-Null

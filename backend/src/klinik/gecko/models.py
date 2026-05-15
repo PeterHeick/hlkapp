@@ -1,10 +1,24 @@
 """Pydantic-modeller for Gecko Booking API-svar."""
 from __future__ import annotations
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, model_validator
 
 
-class BookingInterval(BaseModel):
+class _Stripped(BaseModel):
+    """Base der stripper leading/trailing whitespace fra alle string-felter ved parse."""
+
+    @model_validator(mode="before")
+    @classmethod
+    def _strip_strings(cls, data: object) -> object:
+        if isinstance(data, dict):
+            return {
+                k: v.strip() if isinstance(v, str) else v
+                for k, v in data.items()
+            }
+        return data
+
+
+class BookingInterval(_Stripped):
     from_: str = Field(alias="from")
     to: str
 
@@ -14,22 +28,22 @@ class BookingInterval(BaseModel):
         return (th * 60 + tm) - (fh * 60 + fm)
 
 
-class BookedTime(BaseModel):
+class BookedTime(_Stripped):
     date: str
     interval: list[BookingInterval]
 
 
-class GeckoService(BaseModel):
+class GeckoService(_Stripped):
     serviceId: int | None = None
     serviceName: str | None = None
 
 
-class GeckoCalendar(BaseModel):
+class GeckoCalendar(_Stripped):
     calendarId: int
     calendarName: str | None = None
 
 
-class Booking(BaseModel):
+class Booking(_Stripped):
     bookingId: int
     bookedTime: BookedTime
     service: GeckoService | None = None

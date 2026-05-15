@@ -54,7 +54,7 @@ function problemKind(page: CrawlPage): string | null {
           <th class="px-3 py-2 font-semibold w-[88px]">Status</th>
           <th class="px-3 py-2 font-semibold w-[72px] text-right tabular-nums">Dybde</th>
           <th
-            class="px-3 py-2 font-semibold w-[110px] cursor-pointer select-none hover:text-slate-900"
+            class="px-3 py-2 font-semibold w-[140px] whitespace-nowrap cursor-pointer select-none hover:text-slate-900"
             @click="toggleSort"
           >
             <span class="inline-flex items-center gap-1">

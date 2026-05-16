@@ -73,13 +73,11 @@ async def reset_bookings() -> dict[str, object]:
         from klinik.database import get_connection, init_db  # noqa: PLC0415
         conn = get_connection()
         try:
-            conn.executescript("""
-                DROP TABLE IF EXISTS bookings;
-                DROP TABLE IF EXISTS fetched_chunks;
-                DROP TABLE IF EXISTS sync_meta;
-                DROP TABLE IF EXISTS price_log;
-            """)
-            conn.commit()
+            with conn:
+                conn.execute("DROP TABLE IF EXISTS bookings")
+                conn.execute("DROP TABLE IF EXISTS fetched_chunks")
+                conn.execute("DROP TABLE IF EXISTS sync_meta")
+                conn.execute("DROP TABLE IF EXISTS price_log")
         finally:
             conn.close()
         init_db()

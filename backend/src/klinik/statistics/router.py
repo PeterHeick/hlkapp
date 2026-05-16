@@ -37,8 +37,18 @@ def _require_token() -> None:
         raise HTTPException(status_code=400, detail="Gecko API token ikke konfigureret")
 
 
+def _validate_dates(start: str, end: str) -> None:
+    from datetime import date  # noqa: PLC0415
+    for val, name in ((start, "start"), (end, "end")):
+        try:
+            date.fromisoformat(val)
+        except ValueError:
+            raise HTTPException(status_code=400, detail=f"Ugyldig dato '{val}' for '{name}'") from None
+
+
 async def _ensure_chunks(start: str, end: str) -> None:
     """Hent manglende chunks i forgrunden hvis token er konfigureret."""
+    _validate_dates(start, end)
     if settings.gecko_api_token:
         await foreground_fetch(start, end)
 

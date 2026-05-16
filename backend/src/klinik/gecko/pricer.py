@@ -124,13 +124,13 @@ def apply_prices(conn: sqlite3.Connection) -> None:
 
     with conn:
         conn.executemany("UPDATE bookings SET price = ? WHERE booking_id = ?", updates)
+        if unknown:
+            conn.execute(
+                "INSERT INTO price_log (logged_at, unknown_services) VALUES (?, ?)",
+                (datetime.now().isoformat(), json.dumps(sorted(unknown))),
+            )
 
     if unknown:
-        conn.execute(
-            "INSERT INTO price_log (logged_at, unknown_services) VALUES (?, ?)",
-            (datetime.now().isoformat(), json.dumps(sorted(unknown))),
-        )
-        conn.commit()
         logger.warning("Ukendte services (ingen pris): %s", ", ".join(sorted(unknown)))
 
     _update_last_priced_at(conn)

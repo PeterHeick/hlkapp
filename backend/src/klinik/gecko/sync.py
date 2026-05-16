@@ -172,10 +172,17 @@ async def foreground_fetch(start: str, end: str) -> None:
         prev_phase = _phase
         _phase = "foreground"
         try:
+            # Re-read inside lock: snapshot taken before acquiring may be stale
+            conn = get_connection()
+            try:
+                fetched_now = _get_fetched_chunks(conn)
+            finally:
+                conn.close()
             for chunk_key in missing:
-                if chunk_key in fetched or not _chunk_is_stale(chunk_key):
-                    continue  # another coroutine fetched it while we waited for the lock
+                if chunk_key in fetched_now or not _chunk_is_stale(chunk_key):
+                    continue
                 await _fetch_and_store_chunk(chunk_key)
+                fetched_now.add(chunk_key)
         finally:
             _phase = prev_phase if prev_phase != "foreground" else "idle"
 

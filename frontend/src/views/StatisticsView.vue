@@ -23,6 +23,18 @@ const displayTo   = ref(isoToDanish(stat.dateTo))
 watch(displayFrom, (val) => { const iso = danishToIso(val); if (iso) stat.dateFrom = iso })
 watch(displayTo,   (val) => { const iso = danishToIso(val); if (iso) stat.dateTo   = iso })
 
+const pickerFrom = ref<HTMLInputElement | null>(null)
+const pickerTo   = ref<HTMLInputElement | null>(null)
+
+function onPickFrom(e: Event) {
+  const v = (e.target as HTMLInputElement).value
+  if (v) { stat.dateFrom = v; displayFrom.value = isoToDanish(v) }
+}
+function onPickTo(e: Event) {
+  const v = (e.target as HTMLInputElement).value
+  if (v) { stat.dateTo = v; displayTo.value = isoToDanish(v) }
+}
+
 const activeTab = ref<'krtime' | 'behandlere' | 'omsaetning' | 'ressourcer' | 'kvadranter' | 'prisliste'>('krtime')
 const sortBy = ref<'revenue' | 'count'>('revenue')
 
@@ -231,25 +243,61 @@ const maxTreatmentValue = computed(() =>
       <div class="flex items-center gap-3 flex-wrap">
         <div class="flex items-center gap-2">
           <label class="text-[12.5px] font-medium text-slate-700">Fra</label>
-          <input
-            v-model="displayFrom"
-            type="text"
-            placeholder="dd/mm/åååå"
-            maxlength="10"
-            class="h-8 w-32 px-2 rounded-md bg-white border border-slate-300 text-[12.5px] text-slate-800
-                   focus:outline-none focus:ring-2 focus:ring-indigo-200 focus:border-indigo-400"
-          />
+          <div class="relative">
+            <input
+              v-model="displayFrom"
+              type="text"
+              placeholder="dd/mm/åååå"
+              maxlength="10"
+              class="h-8 w-32 pl-2 pr-7 rounded-md bg-white border border-slate-300 text-[12.5px] text-slate-800
+                     focus:outline-none focus:ring-2 focus:ring-indigo-200 focus:border-indigo-400"
+            />
+            <button
+              type="button"
+              tabindex="-1"
+              @click="pickerFrom?.showPicker()"
+              class="absolute right-1.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+            >
+              <AppIcon name="Calendar" :size="13" />
+            </button>
+            <input
+              ref="pickerFrom"
+              type="date"
+              :value="stat.dateFrom"
+              @change="onPickFrom"
+              class="absolute opacity-0 w-0 h-0 pointer-events-none"
+              tabindex="-1"
+            />
+          </div>
         </div>
         <div class="flex items-center gap-2">
           <label class="text-[12.5px] font-medium text-slate-700">Til</label>
-          <input
-            v-model="displayTo"
-            type="text"
-            placeholder="dd/mm/åååå"
-            maxlength="10"
-            class="h-8 w-32 px-2 rounded-md bg-white border border-slate-300 text-[12.5px] text-slate-800
-                   focus:outline-none focus:ring-2 focus:ring-indigo-200 focus:border-indigo-400"
-          />
+          <div class="relative">
+            <input
+              v-model="displayTo"
+              type="text"
+              placeholder="dd/mm/åååå"
+              maxlength="10"
+              class="h-8 w-32 pl-2 pr-7 rounded-md bg-white border border-slate-300 text-[12.5px] text-slate-800
+                     focus:outline-none focus:ring-2 focus:ring-indigo-200 focus:border-indigo-400"
+            />
+            <button
+              type="button"
+              tabindex="-1"
+              @click="pickerTo?.showPicker()"
+              class="absolute right-1.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+            >
+              <AppIcon name="Calendar" :size="13" />
+            </button>
+            <input
+              ref="pickerTo"
+              type="date"
+              :value="stat.dateTo"
+              @change="onPickTo"
+              class="absolute opacity-0 w-0 h-0 pointer-events-none"
+              tabindex="-1"
+            />
+          </div>
         </div>
         <button
           @click="stat.loadAll()"

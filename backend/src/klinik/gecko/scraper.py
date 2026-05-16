@@ -2,9 +2,10 @@
 from __future__ import annotations
 
 import re
+from datetime import date
 from pathlib import Path
 
-_PRICES_PATH = Path("data") / "behandlinger.csv"
+_PRISLISTER_DIR = Path("data") / "prislister"
 
 _sync_running = False
 _sync_count = 0
@@ -94,11 +95,19 @@ def sync_prices() -> None:
                 except Exception:
                     continue
 
-            _PRICES_PATH.parent.mkdir(exist_ok=True)
-            with _PRICES_PATH.open("w", encoding="utf-8") as f:
-                f.write("navn;pris\n")
-                for navn, pris in behandlinger:
-                    f.write(f"{navn};{int(round(pris))}\n")
+            new_prices = {navn: int(round(pris)) for navn, pris in behandlinger}
+            _PRISLISTER_DIR.mkdir(parents=True, exist_ok=True)
+            # Brug nyeste daterede fil til sammenligning
+            existing = sorted(_PRISLISTER_DIR.glob("prisliste_????-??-??.csv"))
+            latest = existing[-1] if existing else None
+            from klinik.gecko.pricer import prices_changed  # noqa: PLC0415
+            if latest is None or prices_changed(new_prices, latest):
+                today_str = date.today().isoformat()
+                dest = _PRISLISTER_DIR / f"prisliste_{today_str}.csv"
+                with dest.open("w", encoding="utf-8") as f:
+                    f.write("navn;pris\n")
+                    for navn, pris in new_prices.items():
+                        f.write(f"{navn};{pris}\n")
             _sync_count = len(behandlinger)
         finally:
             driver.quit()

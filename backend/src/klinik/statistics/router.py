@@ -1,4 +1,4 @@
-"""Statistik-router — bookings, efficiency, providers, revenue."""
+"""Statistik-router — queries mod SQLite bookings-cache."""
 from __future__ import annotations
 
 import io
@@ -7,7 +7,8 @@ from fastapi import APIRouter, HTTPException
 from fastapi.responses import Response
 
 from klinik.config import settings
-from klinik.gecko.client import fetch_bookings
+from klinik.database import get_connection
+from klinik.gecko.sync import foreground_fetch
 from klinik.statistics import service
 from klinik.statistics.models import (
     ProviderBreakdownResponse,
@@ -18,7 +19,8 @@ from klinik.statistics.models import (
 )
 from klinik.statistics.prices import load_prices
 
-_CSV_HEADERS = {"Content-Disposition": "attachment"}
+router = APIRouter(tags=["statistics"])
+
 _BOM = "﻿"
 
 
@@ -29,53 +31,68 @@ def _csv_response(content: str, filename: str) -> Response:
         headers={"Content-Disposition": f'attachment; filename="{filename}"'},
     )
 
-router = APIRouter(tags=["statistics"])
-
 
 def _require_token() -> None:
     if not settings.gecko_api_token:
         raise HTTPException(status_code=400, detail="Gecko API token ikke konfigureret")
 
 
-@router.get("/providers-by-treatment", response_model=ProviderBreakdownResponse)
-async def get_providers_breakdown(start: str, end: str) -> ProviderBreakdownResponse:
-    _require_token()
-    return service.compute_providers_breakdown(await fetch_bookings(start, end))
+async def _ensure_chunks(start: str, end: str) -> None:
+    """Hent manglende chunks i forgrunden hvis token er konfigureret."""
+    if settings.gecko_api_token:
+        await foreground_fetch(start, end)
 
 
 @router.get("/bookings", response_model=VolumeResponse)
 async def get_bookings(start: str, end: str) -> VolumeResponse:
-    _require_token()
-    return service.aggregate_volume(await fetch_bookings(start, end))
+    await _ensure_chunks(start, end)
+    conn = get_connection()
+    try:
+        return service.aggregate_volume(conn, start, end)
+    finally:
+        conn.close()
 
 
 @router.get("/by-treatment", response_model=TreatmentResponse)
 async def get_by_treatment(start: str, end: str) -> TreatmentResponse:
-    _require_token()
-    return service.compute_by_treatment(await fetch_bookings(start, end))
+    await _ensure_chunks(start, end)
+    conn = get_connection()
+    try:
+        return service.compute_by_treatment(conn, start, end)
+    finally:
+        conn.close()
 
 
 @router.get("/providers", response_model=ProvidersResponse)
 async def get_providers(start: str, end: str) -> ProvidersResponse:
-    _require_token()
-    return service.compute_providers(await fetch_bookings(start, end))
+    await _ensure_chunks(start, end)
+    conn = get_connection()
+    try:
+        return service.compute_providers(conn, start, end)
+    finally:
+        conn.close()
+
+
+@router.get("/providers-by-treatment", response_model=ProviderBreakdownResponse)
+async def get_providers_breakdown(start: str, end: str) -> ProviderBreakdownResponse:
+    await _ensure_chunks(start, end)
+    conn = get_connection()
+    try:
+        return service.compute_providers_breakdown(conn, start, end)
+    finally:
+        conn.close()
 
 
 @router.get("/revenue", response_model=RevenueResponse)
 async def get_revenue(start: str, end: str) -> RevenueResponse:
-    _require_token()
-    bookings = await fetch_bookings(start, end)
-    prices = load_prices()
-    by_service: dict[str, float] = {}
-    for b in bookings:
-        if b.service and b.service.serviceName:
-            name = b.service.serviceName
-            by_service[name] = by_service.get(name, 0.0) + prices.get(name, 0.0)
+    await _ensure_chunks(start, end)
+    conn = get_connection()
+    try:
+        by_service = service.compute_revenue_by_service(conn, start, end)
+    finally:
+        conn.close()
     total = round(sum(by_service.values()), 2)
-    return RevenueResponse(
-        total_revenue=total,
-        by_service={k: round(v, 2) for k, v in by_service.items()},
-    )
+    return RevenueResponse(total_revenue=total, by_service=by_service)
 
 
 @router.get("/export/prisliste")
@@ -91,28 +108,39 @@ async def export_prisliste() -> Response:
 @router.get("/export/omsaetning")
 async def export_omsaetning(start: str, end: str) -> Response:
     _require_token()
-    bookings = await fetch_bookings(start, end)
-    prices = load_prices()
-    by_service_count: dict[str, int] = {}
-    by_service_revenue: dict[str, float] = {}
-    for b in bookings:
-        if b.service and b.service.serviceName:
-            name = b.service.serviceName
-            by_service_count[name] = by_service_count.get(name, 0) + 1
-            by_service_revenue[name] = by_service_revenue.get(name, 0.0) + prices.get(name, 0.0)
-    total = round(sum(by_service_revenue.values()), 2)
+    await _ensure_chunks(start, end)
+    conn = get_connection()
+    try:
+        by_service_rev = service.compute_revenue_by_service(conn, start, end)
+        cnt_rows = conn.execute(
+            """
+            SELECT service_name, COUNT(*) FROM bookings
+            WHERE booked_date >= ? AND booked_date <= ?
+            GROUP BY service_name
+            """,
+            (start, end),
+        ).fetchall()
+    finally:
+        conn.close()
+    counts = {(r[0] or "Ukendt"): r[1] for r in cnt_rows}
+    total = round(sum(by_service_rev.values()), 2)
     buf = io.StringIO()
     buf.write("Behandling;Antal;Omsætning (kr)\n")
-    for name, amount in sorted(by_service_revenue.items(), key=lambda x: -x[1]):
-        buf.write(f"{name};{by_service_count.get(name, 0)};{int(round(amount))}\n")
-    buf.write(f"Total;{sum(by_service_count.values())};{int(round(total))}\n")
+    for name, amount in sorted(by_service_rev.items(), key=lambda x: -x[1]):
+        buf.write(f"{name};{counts.get(name, 0)};{int(round(amount))}\n")
+    buf.write(f"Total;{sum(counts.values())};{int(round(total))}\n")
     return _csv_response(buf.getvalue(), "omsætning.csv")
 
 
 @router.get("/export/behandlinger")
 async def export_behandlinger(start: str, end: str) -> Response:
     _require_token()
-    result = service.compute_by_treatment(await fetch_bookings(start, end))
+    await _ensure_chunks(start, end)
+    conn = get_connection()
+    try:
+        result = service.compute_by_treatment(conn, start, end)
+    finally:
+        conn.close()
     buf = io.StringIO()
     buf.write("Behandling;Bookinger;Pris (kr);Omsætning (kr)\n")
     for item in result.items:
@@ -124,7 +152,12 @@ async def export_behandlinger(start: str, end: str) -> Response:
 @router.get("/export/behandleroversigt")
 async def export_behandleroversigt(start: str, end: str) -> Response:
     _require_token()
-    result = service.compute_providers_breakdown(await fetch_bookings(start, end))
+    await _ensure_chunks(start, end)
+    conn = get_connection()
+    try:
+        result = service.compute_providers_breakdown(conn, start, end)
+    finally:
+        conn.close()
     buf = io.StringIO()
     buf.write("Behandler;Behandling;Antal;Omsætning (kr)\n")
     for p in result.providers:

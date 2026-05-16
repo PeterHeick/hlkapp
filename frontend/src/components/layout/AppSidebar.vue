@@ -3,6 +3,13 @@ import { computed, ref, onMounted, onUnmounted } from 'vue'
 import { useRoute } from 'vue-router'
 import AppIcon from './AppIcon.vue'
 import { apiFetch } from '@/api/client'
+import { useSyncStore } from '@/stores/sync'
+
+function formatDanishDate(iso: string): string {
+  const months = ['jan','feb','mar','apr','maj','jun','jul','aug','sep','okt','nov','dec']
+  const [y, m, d] = iso.split('-')
+  return `${parseInt(d)} ${months[parseInt(m) - 1]} ${y}`
+}
 
 const appVersion = __APP_VERSION__
 
@@ -21,11 +28,17 @@ async function checkHealth() {
   }
 }
 
+const sync = useSyncStore()
+
 onMounted(() => {
   checkHealth()
   healthTimer = setInterval(checkHealth, 10000)
+  sync.start()
 })
-onUnmounted(() => { if (healthTimer) clearInterval(healthTimer) })
+onUnmounted(() => {
+  if (healthTimer) clearInterval(healthTimer)
+  sync.stop()
+})
 
 const tools = [
   { key: 'seo',           path: '/#/seo',           icon: 'Globe',    label: 'SEO & Hjemmeside' },
@@ -102,17 +115,50 @@ const klinik = [
       </div>
     </nav>
 
+    <!-- Sync-loading (kun synlig under aktiv hentning) -->
+    <div
+      v-if="sync.status && sync.status.phase !== 'idle'"
+      class="mx-3 mb-2 px-3 py-2 rounded-md bg-slate-800/60 text-[11px]"
+    >
+      <div class="flex items-center gap-1.5">
+        <span class="w-1.5 h-1.5 rounded-full bg-indigo-400 animate-pulse shrink-0" />
+        <span class="text-slate-300">
+          {{ sync.status.phase === 'foreground'
+            ? 'Opdaterer bookingdata...'
+            : 'Henter historisk data...' }}
+        </span>
+      </div>
+      <div v-if="sync.status.phase === 'backfill' && sync.status.pending_chunks > 0"
+           class="mt-1 text-slate-500">
+        {{ sync.status.pending_chunks }} perioder tilbage
+      </div>
+    </div>
+
     <!-- Footer -->
-    <div class="px-4 py-3 border-t border-slate-800/80 text-[11px] text-slate-500
-                flex items-center justify-between">
-      <span>v{{ appVersion }} · lokal</span>
-      <span class="flex items-center gap-1.5">
-        <span
-          class="w-1.5 h-1.5 rounded-full transition-colors"
-          :class="connected ? 'bg-emerald-400' : 'bg-slate-600'"
-        />
-        {{ connected ? 'Forbundet' : 'Ikke forbundet' }}
-      </span>
+    <div class="border-t border-slate-800/80 text-[11px] text-slate-500">
+      <!-- Data-rækkevidde -->
+      <div class="px-4 pt-2.5 pb-1">
+        <template v-if="sync.status && sync.status.oldest_booking_date">
+          <span class="text-slate-400">Bookingdata: </span>
+          <span class="text-slate-300">
+            {{ formatDanishDate(sync.status.oldest_booking_date) }} → i dag
+          </span>
+        </template>
+        <template v-else-if="sync.status && sync.status.booking_count === 0">
+          <span class="text-slate-600 italic">Ingen bookingdata hentet endnu</span>
+        </template>
+      </div>
+      <!-- Version og forbindelsesstatus -->
+      <div class="px-4 pb-2.5 flex items-center justify-between">
+        <span>v{{ appVersion }} · lokal</span>
+        <span class="flex items-center gap-1.5">
+          <span
+            class="w-1.5 h-1.5 rounded-full transition-colors"
+            :class="connected ? 'bg-emerald-400' : 'bg-slate-600'"
+          />
+          {{ connected ? 'Forbundet' : 'Ikke forbundet' }}
+        </span>
+      </div>
     </div>
   </aside>
 </template>

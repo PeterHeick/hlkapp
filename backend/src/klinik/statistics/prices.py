@@ -1,4 +1,7 @@
-"""Loader til data/behandlinger.csv — navn → pris mapping."""
+"""Loader til behandlingspriser.
+
+Prioriterer daterede prislister i data/prislister/, falder tilbage til behandlinger.csv.
+"""
 from __future__ import annotations
 
 import csv
@@ -6,6 +9,7 @@ import re
 from pathlib import Path
 
 _PRICES_PATH = Path("data") / "behandlinger.csv"
+_PRISLISTER_DIR = Path("data") / "prislister"
 
 
 def _parse_danish_number(s: str) -> float:
@@ -32,11 +36,12 @@ def _parse_danish_number(s: str) -> float:
 
 
 def load_prices() -> dict[str, float]:
-    """Returner {behandlingsnavn: pris} fra CSV. Tom dict hvis filen ikke findes."""
-    if not _PRICES_PATH.exists():
+    """Returner {behandlingsnavn: pris} fra nyeste daterede CSV, ellers behandlinger.csv."""
+    path = _find_prices_path()
+    if not path or not path.exists():
         return {}
     prices: dict[str, float] = {}
-    with _PRICES_PATH.open(encoding="utf-8") as f:
+    with path.open(encoding="utf-8") as f:
         reader = csv.DictReader(f, delimiter=';')
         for row in reader:
             navn = (row.get("navn") or "").strip()
@@ -44,3 +49,14 @@ def load_prices() -> dict[str, float]:
             if navn:
                 prices[navn] = _parse_danish_number(pris_raw)
     return prices
+
+
+def _find_prices_path() -> Path | None:
+    if _PRISLISTER_DIR.exists():
+        candidates = sorted(_PRISLISTER_DIR.glob("prisliste_????-??-??.csv"))
+        if candidates:
+            return candidates[-1]
+        fallback = _PRISLISTER_DIR / "prisliste_UKENDT-DATO.csv"
+        if fallback.exists():
+            return fallback
+    return _PRICES_PATH if _PRICES_PATH.exists() else None

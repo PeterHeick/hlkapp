@@ -19,6 +19,7 @@ from klinik.config import settings
 from klinik.crawler.router import router as crawler_router
 from klinik.database import init_db
 from klinik.gecko.router import router as gecko_router
+from klinik.gecko.sync import start_backfill_loop
 from klinik.statistics.router import router as stats_router
 
 
@@ -28,6 +29,8 @@ async def lifespan(_app: FastAPI) -> AsyncGenerator[None]:
     static = Path(__file__).parent / "static" / "dist"
     if static.exists():
         _app.mount("/", StaticFiles(directory=str(static), html=True), name="frontend")
+    if settings.gecko_api_token:
+        await start_backfill_loop()
     yield
 
 

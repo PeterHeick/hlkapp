@@ -1,13 +1,15 @@
-"""Gecko Booking API router — pris-sync og opslag."""
+"""Gecko Booking API router — pris-sync, booking-cache og opslag."""
 from __future__ import annotations
 
 import asyncio
+import json
 
 import httpx
 from fastapi import APIRouter, HTTPException
 
 from klinik.config import settings
 from klinik.gecko import scraper
+from klinik.gecko.sync import get_sync_status, start_backfill_loop
 from klinik.statistics.prices import load_prices
 
 router = APIRouter(tags=["gecko"])
@@ -42,6 +44,73 @@ async def config_check() -> dict[str, object]:
 @router.get("/prices-status")
 async def prices_status() -> dict[str, object]:
     return scraper.get_status()
+
+
+@router.get("/sync-status")
+async def sync_status() -> dict[str, object]:
+    return await asyncio.to_thread(get_sync_status)
+
+
+@router.post("/apply-prices")
+async def apply_prices_endpoint() -> dict[str, object]:
+    """Manuel re-pricing af alle bookinger med price IS NULL."""
+    def _run() -> dict[str, object]:
+        from klinik.database import get_connection  # noqa: PLC0415
+        from klinik.gecko.pricer import apply_prices  # noqa: PLC0415
+        conn = get_connection()
+        try:
+            apply_prices(conn)
+            return {"ok": True}
+        finally:
+            conn.close()
+    return await asyncio.to_thread(_run)
+
+
+@router.post("/reset")
+async def reset_bookings() -> dict[str, object]:
+    """Drop booking-tabeller, genopret schema, genstart backfill."""
+    def _drop_and_recreate() -> None:
+        from klinik.database import get_connection, init_db  # noqa: PLC0415
+        conn = get_connection()
+        try:
+            conn.executescript("""
+                DROP TABLE IF EXISTS bookings;
+                DROP TABLE IF EXISTS fetched_chunks;
+                DROP TABLE IF EXISTS sync_meta;
+                DROP TABLE IF EXISTS price_log;
+            """)
+            conn.commit()
+        finally:
+            conn.close()
+        init_db()
+    await asyncio.to_thread(_drop_and_recreate)
+    if settings.gecko_api_token:
+        await start_backfill_loop()
+    return {"ok": True}
+
+
+@router.get("/price-log")
+async def price_log() -> dict[str, object]:
+    """Seneste ukendte service-navne uden prismatch."""
+    def _fetch() -> list[dict[str, object]]:
+        from klinik.database import get_connection  # noqa: PLC0415
+        conn = get_connection()
+        try:
+            rows = conn.execute(
+                "SELECT logged_at, unknown_services FROM price_log ORDER BY id DESC LIMIT 20"
+            ).fetchall()
+            result = []
+            for r in rows:
+                try:
+                    services = json.loads(r[1] or "[]")
+                except (ValueError, TypeError):
+                    services = []
+                result.append({"logged_at": r[0], "unknown_services": services})
+            return result
+        finally:
+            conn.close()
+    entries = await asyncio.to_thread(_fetch)
+    return {"entries": entries}
 
 
 @router.get("/prices")

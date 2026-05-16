@@ -97,6 +97,31 @@ export const PricesSyncStatusSchema = z.object({
   error: z.string().nullable(),
 })
 
+export const SyncStatusSchema = z.object({
+  phase: z.string(),
+  chunks_done: z.number(),
+  chunks_total: z.number(),
+  pending_chunks: z.number(),
+  oldest_booking_date: z.string().nullable(),
+  booking_count: z.number(),
+  last_priced_at: z.string().nullable(),
+  migration_warning: z.string().nullable(),
+  error: z.string().nullable(),
+})
+
+export const PriceLogEntrySchema = z.object({
+  logged_at: z.string(),
+  unknown_services: z.array(z.string()),
+})
+
+export const PriceLogSchema = z.object({
+  entries: z.array(PriceLogEntrySchema),
+})
+
+export type SyncStatus = z.infer<typeof SyncStatusSchema>
+export type PriceLogEntry = z.infer<typeof PriceLogEntrySchema>
+export type PriceLog = z.infer<typeof PriceLogSchema>
+
 export const ProviderTreatmentItemSchema = z.object({
   service_name: z.string(),
   count: z.number(),

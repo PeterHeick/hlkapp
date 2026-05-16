@@ -121,5 +121,35 @@ defineProps<{ name: string; size?: number; stroke?: number }>()
     <template v-else-if="name === 'List'">
       <path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/>
     </template>
+    <!-- Power -->
+    <template v-else-if="name === 'Power'">
+      <path d="M18.36 6.64a9 9 0 1 1-12.73 0"/>
+      <path d="M12 2v10"/>
+    </template>
+    <!-- Download -->
+    <template v-else-if="name === 'Download'">
+      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+      <polyline points="7 10 12 15 17 10"/>
+      <line x1="12" y1="15" x2="12" y2="3"/>
+    </template>
+    <!-- RefreshCw -->
+    <template v-else-if="name === 'RefreshCw'">
+      <path d="M21 2v6h-6"/>
+      <path d="M3 12a9 9 0 0 1 15-6.7L21 8"/>
+      <path d="M3 22v-6h6"/>
+      <path d="M21 12a9 9 0 0 1-15 6.7L3 16"/>
+    </template>
+    <!-- Trash -->
+    <template v-else-if="name === 'Trash'">
+      <polyline points="3 6 5 6 21 6"/>
+      <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>
+      <path d="M10 11v6M14 11v6"/>
+      <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/>
+    </template>
+    <!-- Tag -->
+    <template v-else-if="name === 'Tag'">
+      <path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/>
+      <line x1="7" y1="7" x2="7.01" y2="7"/>
+    </template>
   </svg>
 </template>

@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia'
-import { ref, onUnmounted } from 'vue'
+import { ref } from 'vue'
 import { apiFetch } from '@/api/client'
 import { SyncStatusSchema } from '@/api/schemas'
 import type { SyncStatus } from '@/api/schemas'
